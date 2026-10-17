@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pen-pig · EZOS 作者的个人主页</title>
+  <meta name="description" content="pen-pig：初一学生、EZOS 作者、洛谷 OI 选手（UID 1860966）。项目代码由 AI 生成，我负责需求、设计与验证。这里收录我的项目与折腾记录。">
+  <meta property="og:title" content="pen-pig · EZOS 作者的个人主页">
+  <meta property="og:description" content="初一学生 · EZOS 作者 · 洛谷 OI 选手（UID 1860966）。代码由 AI 生成，我负责设计与验证。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pen-pig.github.io/">
+  <meta name="theme-color" content="#06080c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306080c'/%3E%3Cpath d='M18 20l16 12-16 12' stroke='%2346f3a7' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+  <!-- 氛围层：扫描线 / 噪点 / 光标辉光 -->
+  <div class="fx fx-scan" aria-hidden="true"></div>
+  <div class="fx fx-noise" aria-hidden="true"></div>
+  <div class="fx fx-cursor" id="cursorGlow" aria-hidden="true"></div>
+
+  <!-- ============ 导航 ============ -->
+  <header class="nav" id="top">
+    <a class="nav-logo" href="#top" aria-label="回到顶部">
+      <span class="nav-user">pen-pig@ezos</span><span class="nav-colon">:</span><span class="nav-path">~</span><span class="nav-dollar">$</span>
+    </a>
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="#about" data-nav="about"><i>01</i>关于</a>
+      <a href="#projects" data-nav="projects"><i>02</i>项目</a>
+      <a href="#oi" data-nav="oi"><i>03</i>竞赛</a>
+      <a href="#contact" data-nav="contact"><i>04</i>联系</a>
+    </nav>
+    <span class="nav-status"><i class="pulse-dot" aria-hidden="true"></i>ONLINE</span>
+  </header>
+
+  <main>
+
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-inner">
+
+        <div class="hero-id">
+          <p class="tape"><span>PERSONAL HOMEPAGE</span><span class="tape-dim">// EST.2026</span></p>
+          <h1 class="hero-name"><span id="heroName">pen-pig</span><span class="caret" aria-hidden="true"></span></h1>
+          <p class="hero-role">初一学生 · EZOS 作者 · OI 选手</p>
+          <p class="hero-bio">我在 AI 的协助下从 bootloader 开始搭建一个操作系统，课余在洛谷刷题。这里是我的数字自留地——项目、代码与踩坑记录，都放在这儿。</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#projects">查看项目<i aria-hidden="true">→</i></a>
+            <a class="btn btn-ghost" href="https://www.luogu.com/user/1860966" target="_blank" rel="noopener noreferrer">洛谷 · UID 1860966</a>
+          </div>
+          <ul class="hero-meta">
+            <li><span>STATUS</span><b class="ok">ONLINE</b></li>
+            <li><span>LOCATION</span><b>中国 · GMT+8</b></li>
+            <li><span>CURRENTLY</span><b>EZOS + 刷题</b></li>
+          </ul>
+        </div>
+
+        <div class="hero-term">
+          <div class="term panel">
+            <div class="term-bar">
+              <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="term-title">ezos@pen-pig: ~/boot.log</span>
+              <span class="term-size">80×24</span>
+            </div>
+            <div class="term-body" id="bootLog">
+              <p><span class="t">[    0.000000]</span> EZOS kernel 1.0.0 booting ...</p>
+              <p><span class="t">[    0.004182]</span> scheduler: preemptive, 8 task slots</p>
+              <p><span class="t">[    0.118937]</span> memory: pmm pool 0xA00000-0x1000000 online</p>
+              <p><span class="t">[    0.402516]</span> fs: ext4 ntfs f2fs refs exfat fat mounted</p>
+              <p><span class="t">[    1.033204]</span> net: ipv4 / udp / tcp / socket up</p>
+              <p><span class="t">[    1.871550]</span> userland: pipe fork waitpid libc ready</p>
+              <p><span class="t">[    2.530118]</span> gui: desktop online</p>
+              <p class="ok"><span class="t">[    3.000000]</span> login: pen-pig — welcome home ✓</p>
+            </div>
+          </div>
+          <p class="fig-cap">FIG.01 — EZOS 启动序列，boot log 风格还原</p>
+        </div>
+
+      </div>
+      <a class="scroll-hint" href="#about"><span>SCROLL</span><i aria-hidden="true">↓</i></a>
+    </section>
+
+    <!-- ============ TICKER ============ -->
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track" id="tickerTrack">
+        <span>EZOS KERNEL — 7 FILESYSTEMS</span><b>//</b><span>PREEMPTIVE SCHEDULER</span><b>//</b><span>RING3 USERLAND</span><b>//</b><span>TCP/IP STACK</span><b>//</b><span>LUOGU UID 1860966</span><b>//</b><span>CODE BY AI — VERIFIED BY ME</span><b>//</b><span>QEMU E2E TESTED</span><b>//</b>
+      </div>
+    </div>
+
+    <!-- ============ 01 关于 ============ -->
+    <section class="section" id="about">
+      <header class="sec-head reveal">
+        <span class="sec-index">// 01</span>
+        <h2>关于</h2>
+        <p class="sec-sub">ABOUT — the human behind the project</p>
+      </header>
+      <div class="about-grid">
+        <div class="about-text reveal">
+          <p class="lead">你好，我是 <strong>pen-pig</strong>，一名初一学生，也是 <strong>EZOS</strong> 的作者。</p>
+          <p>我相信理解一个系统最好的方式，是深入它的每一层。EZOS 从 bootloader、内存管理、七种文件系统，到抢占式调度、用户态进程和 TCP/IP 协议栈——每个子系统都带有自测，并在 QEMU 里跑端到端验证。</p>
+          <p>需要说明的是：这个项目的代码由 <strong>AI 生成</strong>，我负责提出需求、做设计、调试和验证，并在这个过程中弄懂每个子系统的工作原理。我享受的是"把问题拆开、再证明它真的对了"的过程。</p>
+          <p>刷题是另一座需要从头理解的系统。写内核和刷题，对我其实是同一件事。</p>
+        </div>
+        <aside class="spec panel reveal">
+          <div class="spec-title">SYSTEM SPEC — EZOS</div>
+          <div class="spec-grid">
+            <div class="spec-item">
+              <b class="spec-num" data-target="30" data-suffix="k+">30k+</b>
+              <span>内核代码行数</span>
+            </div>
+            <div class="spec-item">
+              <b class="spec-num" data-target="1.2" data-suffix="k+">1.2k+</b>
+              <span>内核函数</span>
+            </div>
+            <div class="spec-item">
+              <b class="spec-num" data-target="7">7</b>
+              <span>文件系统</span>
+            </div>
+            <div class="spec-item">
+              <b class="spec-num" data-target="74" data-suffix="+">74+</b>
+              <span>git 提交</span>
+            </div>
+          </div>
+          <p class="spec-note">* 代码由 AI 生成并经验证；数据统计自主分支 main</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ 02 项目 ============ -->
+    <section class="section" id="projects">
+      <header class="sec-head reveal">
+        <span class="sec-index">// 02</span>
+        <h2>项目</h2>
+        <p class="sec-sub">PROJECTS — built with AI, verified by me</p>
+      </header>
+
+      <article class="proj-featured panel reveal">
+        <div class="proj-banner">
+          <span class="proj-flag">FEATURED</span>
+          <span class="proj-stars" title="GitHub Stars">★ 2</span>
+        </div>
+        <div class="proj-featured-grid">
+          <div class="proj-featured-main">
+            <h3 class="proj-name">EZOS</h3>
+            <p class="proj-tagline">从 bootloader 到图形桌面的操作系统项目</p>
+            <p class="proj-desc">我从 2026 年 8 月开始维护这个项目：代码由 AI 生成，我负责架构设计、需求拆解、调试与验证。它是我学习系统原理的"活教材"——每一个子系统都真的跑在 QEMU 里。</p>
+            <ul class="proj-feats">
+              <li><b>文件系统 ×7</b><span>ext4 / NTFS / F2FS / ReFS / exFAT / FAT / EROFS，除 EROFS 外全部可写</span></li>
+              <li><b>进程</b><span>抢占式调度、ring3 用户态、pipe / fork / waitpid、libc</span></li>
+              <li><b>网络</b><span>IPv4 / UDP / TCP 协议栈 + socket 系统调用</span></li>
+              <li><b>验证</b><span>子系统自测 + QEMU 端到端（QMP sendkey / OCR 校验）</span></li>
+            </ul>
+            <div class="proj-tags">
+              <span>C</span><span>x86 Assembly</span><span>Ninja</span><span>QEMU</span><span>Python</span>
+              <span class="chip chip-ai">AI 生成</span>
+            </div>
+          </div>
+          <div class="proj-tree" aria-hidden="true">
+            <div class="tree-title">ezos/</div>
+            <pre>├─ <span class="tree-dir">boot/</span>     bootloader + 字库
+├─ <span class="tree-dir">kernel/</span>   调度 / 内存 / 文件系统 / 网络
+├─ <span class="tree-dir">user/</span>     shell / vi / 游戏 / libc
+├─ <span class="tree-dir">uefi/</span>     UEFI 引导（实验）
+├─ <span class="tree-dir">tests/</span>    selftest + QEMU E2E
+└─ <span class="tree-file">build.ninja</span></pre>
+          </div>
+        </div>
+        <div class="proj-foot">
+          <a class="proj-link" href="https://github.com/pen-pig/EZOS" target="_blank" rel="noopener noreferrer">github.com/pen-pig/EZOS<i aria-hidden="true">→</i></a>
+          <span class="proj-lang"><i class="lang-dot lang-c" aria-hidden="true"></i>C</span>
+        </div>
+      </article>
+
+      <div class="proj-row">
+        <article class="proj panel reveal">
+          <h3 class="proj-name">website</h3>
+          <p class="proj-tagline">社团网站</p>
+          <p class="proj-desc">PHP 5.6+ 兼容 + JSON 文件存储（无数据库）+ Bootstrap UI。已上线 OJ、注册、头像、签到、搜索、备份、网盘等模块。代码由 AI 生成，我负责需求与维护。</p>
+          <div class="proj-tags">
+            <span>PHP</span><span>JSON</span><span>Bootstrap</span>
+            <span class="chip chip-ai">AI 生成</span>
+          </div>
+          <div class="proj-foot">
+            <a class="proj-link" href="https://github.com/pen-pig/website" target="_blank" rel="noopener noreferrer">github.com/pen-pig/website<i aria-hidden="true">→</i></a>
+            <span class="proj-lang"><i class="lang-dot lang-php" aria-hidden="true"></i>PHP</span>
+          </div>
+        </article>
+
+        <article class="proj panel reveal">
+          <h3 class="proj-name">gdgzoi-clawler</h3>
+          <p class="proj-tagline">GDZOI 数据爬虫</p>
+          <p class="proj-desc">抓取并整理 GDZOI 的比赛榜单与提交数据，C++ 编写。写它的初衷是让社团的 OJ 数据查询快一点。</p>
+          <div class="proj-tags">
+            <span>C++</span>
+            <span class="chip chip-ai">AI 生成</span>
+          </div>
+          <div class="proj-foot">
+            <a class="proj-link" href="https://github.com/pen-pig/gdgzoi-clawler" target="_blank" rel="noopener noreferrer">github.com/pen-pig/gdgzoi-clawler<i aria-hidden="true">→</i></a>
+            <span class="proj-lang"><i class="lang-dot lang-cpp" aria-hidden="true"></i>C++</span>
+          </div>
+        </article>
+      </div>
+
+      <a class="proj-more reveal" href="https://github.com/pen-pig?tab=repositories" target="_blank" rel="noopener noreferrer">查看全部仓库<i aria-hidden="true">→</i></a>
+    </section>
+
+    <!-- ============ 03 竞赛 ============ -->
+    <section class="section" id="oi">
+      <header class="sec-head reveal">
+        <span class="sec-index">// 03</span>
+        <h2>竞赛</h2>
+        <p class="sec-sub">COMPETITIVE PROGRAMMING — luogu</p>
+      </header>
+      <div class="oi-grid">
+        <div class="oi-card panel reveal">
+          <div class="oi-card-bar"><span class="prompt">$</span> whois --luogu 1860966</div>
+          <div class="oi-card-body">
+            <div class="oi-uid">
+              <span class="oi-uid-label">UID</span>
+              <span class="oi-uid-num">1860966</span>
+            </div>
+            <dl class="oi-kv">
+              <dt>user</dt><dd>pen-pig</dd>
+              <dt>platform</dt><dd>luogu.com.cn</dd>
+              <dt>status</dt><dd class="ok">active</dd>
+            </dl>
+            <a class="btn btn-primary" href="https://www.luogu.com/user/1860966" target="_blank" rel="noopener noreferrer">访问洛谷主页<i aria-hidden="true">→</i></a>
+          </div>
+        </div>
+        <div class="oi-text reveal">
+          <p>算法是另一座需要从头理解的系统：把一个庞大问题拆成可验证的小步骤，再用测试证明它正确。</p>
+          <p>常用语言 <b>C / C++</b>。刷题记录都放在洛谷主页上，欢迎交流。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 04 联系 ============ -->
+    <section class="section" id="contact">
+      <header class="sec-head reveal">
+        <span class="sec-index">// 04</span>
+        <h2>联系</h2>
+        <p class="sec-sub">CONTACT — say hello</p>
+      </header>
+      <div class="contact-grid">
+        <a class="contact-card panel reveal" href="https://github.com/pen-pig" target="_blank" rel="noopener noreferrer">
+          <span class="contact-kicker">[01] GITHUB</span>
+          <span class="contact-main">github.com/pen-pig</span>
+          <span class="contact-note">代码都在这儿，Issue 也行</span>
+          <i class="contact-arrow" aria-hidden="true">→</i>
+        </a>
+        <a class="contact-card panel reveal" href="https://www.luogu.com/user/1860966" target="_blank" rel="noopener noreferrer">
+          <span class="contact-kicker">[02] LUOGU</span>
+          <span class="contact-main">UID 1860966</span>
+          <span class="contact-note">刷题与竞赛记录</span>
+          <i class="contact-arrow" aria-hidden="true">→</i>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ 页脚 ============ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-logo">pen-pig@ezos:~$</span>
+      <span class="footer-note">© 2026 pen-pig — 用好奇心与 AI 造东西</span>
+      <a class="footer-top" href="#top">回到顶部<i aria-hidden="true">↑</i></a>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js" defer></script>
+</body>
+</html>
