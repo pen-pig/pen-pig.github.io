@@ -1,6 +1,6 @@
 # pen-pig.github.io
 
-个人主页。深色「系统控制台」风格——首屏是一段会自己敲出来的 EZOS 启动日志。
+个人主页。深色「系统控制台」风格——首屏是一段会自己敲出来的 boot log 终端。
 
 🔗 **https://pen-pig.github.io/**
 
@@ -35,4 +35,4 @@ python -m http.server 8000   # 然后打开 http://localhost:8000
 
 ## 说明
 
-本站展示的项目（EZOS、website、gdgzoi-clawler）代码由 AI 生成，由我负责需求、设计与验证。
+本站展示的项目（CeruliaOS、website、gdgzoi-clawler）代码由 AI 生成，由我负责需求、设计与验证。
