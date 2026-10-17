@@ -527,10 +527,11 @@ b, strong { font-weight: 700; color: var(--text-strong); }
    ============================================================ */
 .about-grid {
   display: grid;
-  grid-template-columns: 1.28fr 0.72fr;
-  gap: 60px;
+  grid-template-columns: 1fr;
+  gap: 44px;
   align-items: start;
 }
+.about-text { max-width: 780px; }
 
 .about-text p {
   color: var(--dim);
@@ -728,7 +729,7 @@ b, strong { font-weight: 700; color: var(--text-strong); }
 
 .proj-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 30px;
   margin-bottom: 34px;
 }
@@ -938,6 +939,7 @@ b, strong { font-weight: 700; color: var(--text-strong); }
   .about-grid { grid-template-columns: 1fr; gap: 44px; }
   .spec { position: static; }
   .proj-featured-grid { grid-template-columns: 1fr; gap: 30px; }
+  .proj-row { grid-template-columns: 1fr 1fr; }
   .oi-grid { grid-template-columns: 1fr; gap: 34px; }
 }
 
