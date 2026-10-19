@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>在浏览器里运行 CeruliaOS · pen-pig</title>
+  <meta name="description" content="不是视频——这是一台跑在网页里的真实 x86 模拟器，直接启动 CeruliaOS 的磁盘镜像。">
+  <meta property="og:title" content="在浏览器里运行 CeruliaOS">
+  <meta property="og:description" content="网页里的真实 x86 模拟器，直接启动 CeruliaOS。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pen-pig.github.io/os.html">
+  <meta name="theme-color" content="#06080c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306080c'/%3E%3Cpath d='M18 20l16 12-16 12' stroke='%2346f3a7' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+  <!-- 氛围层：扫描线 / 噪点 / 光标辉光 -->
+  <div class="fx fx-scan" aria-hidden="true"></div>
+  <div class="fx fx-noise" aria-hidden="true"></div>
+  <div class="fx fx-cursor" id="cursorGlow" aria-hidden="true"></div>
+
+  <!-- ============ 导航 ============ -->
+  <header class="nav" id="top">
+    <a class="nav-logo" href="index.html" aria-label="返回主页">
+      <span class="nav-user">pen-pig@home</span><span class="nav-colon">:</span><span class="nav-path">~</span><span class="nav-dollar">$</span>
+    </a>
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="index.html#about"><i>01</i>关于</a>
+      <a href="index.html#projects"><i>02</i>项目</a>
+      <a href="index.html#oi"><i>03</i>竞赛</a>
+      <a href="index.html#contact"><i>04</i>联系</a>
+    </nav>
+    <span class="nav-status"><i class="pulse-dot" id="navDot" aria-hidden="true"></i><span id="navStatus">IDLE</span></span>
+  </header>
+
+  <main class="os-page">
+
+    <!-- ============ 标题区 ============ -->
+    <section class="os-head">
+      <a class="os-back" href="index.html#projects">← 返回项目区</a>
+      <p class="tape"><span>LIVE DEMO</span><span class="tape-dim">// NO VIDEO — REAL EMULATION</span></p>
+      <h1 class="os-title">在浏览器里运行 <em>CeruliaOS</em></h1>
+      <p class="os-sub">下面是一台真实的 x86 模拟器（v86，WebAssembly）。点击启动，它会加载 CeruliaOS 的磁盘镜像，走完和真机一样的引导链：<b>BIOS → MBR → boot sector → stage2 → kernel</b>。你在屏幕上看到的一切，都是这台"虚拟机"现场算出来的。</p>
+    </section>
+
+    <!-- ============ 模拟器舞台 ============ -->
+    <section class="os-stage panel" id="osStage">
+      <span class="hud hud-tl" aria-hidden="true">VM // X86-32</span>
+      <span class="hud hud-tr" aria-hidden="true">128MB RAM</span>
+      <span class="hud hud-bl" aria-hidden="true">DISK: RAW IMAGE</span>
+      <span class="hud hud-br" aria-hidden="true">v86 / WASM</span>
+
+      <div class="os-screen-wrap" id="screenWrap">
+        <!-- v86 会把 canvas 注入这个容器 -->
+        <div class="os-screen" id="screenContainer" tabindex="0" role="application" aria-label="CeruliaOS 虚拟机屏幕，点击后可用键盘输入"></div>
+
+        <!-- 覆盖层：启动前 / 加载中 / 镜像缺失 / 错误 -->
+        <div class="os-overlay" id="osOverlay">
+          <div class="os-overlay-inner" id="osOverlayInner">
+            <p class="os-overlay-kicker" id="osOverlayKicker">READY</p>
+            <p class="os-overlay-text" id="osOverlayText">点击下方按钮，在网页里启动 CeruliaOS。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 加载进度条 -->
+      <div class="os-progress" id="osProgress" hidden>
+        <div class="os-progress-bar" id="osProgressBar"></div>
+      </div>
+
+      <!-- 控制条 -->
+      <div class="os-controls">
+        <div class="os-controls-left">
+          <button class="btn btn-primary" id="btnStart" type="button">▶ 启动 CeruliaOS</button>
+          <button class="btn btn-ghost" id="btnReset" type="button" disabled>重启</button>
+          <button class="btn btn-ghost" id="btnFull" type="button" disabled>全屏</button>
+        </div>
+        <span class="os-status" id="osStatus"><i class="pulse-dot" aria-hidden="true"></i>IDLE</span>
+      </div>
+    </section>
+
+    <!-- ============ 说明区 ============ -->
+    <section class="os-info">
+      <article class="os-info-card panel reveal">
+        <h2>这是怎么做到的</h2>
+        <p>整个系统跑在 <b>v86</b> 里——一个用 WebAssembly 编译的 x86 模拟器，连 BIOS 都是真的。磁盘镜像和你在 VMware / QEMU 里启动的是同一个文件，只是换了个"硬件"。</p>
+        <p>没有任何录屏成分：屏幕上的每个字符都是模拟器执行 CeruliaOS 机器码的输出。</p>
+      </article>
+      <article class="os-info-card panel reveal">
+        <h2>操作方式</h2>
+        <p>启动后<b>点击一下屏幕</b>，键盘输入就会送进虚拟机（Esc 或点击屏幕外可释放）。CeruliaOS 有自己的 shell，输入 <code>help</code> 看看能做什么。</p>
+        <p>模拟的是 32 位 PC：方向键、回车、字母数字键都可用；部分组合键（如 Ctrl+Alt+Del）由浏览器占用。</p>
+      </article>
+      <article class="os-info-card panel reveal" id="osImageCard">
+        <h2>镜像说明</h2>
+        <p id="osImageNote">磁盘镜像从 CeruliaOS 的构建产物生成：源码目录运行 <code>python tools/make_image.py</code> 得到 <code>os-image.bin</code>（引导扇区 + stage2 + 内核，无数据分区，约 0.8MB），托管在本站 <code>assets/os/</code>。浏览器版不带数据分区，因此文件系统相关命令暂不可用；shell、selftest 等内核功能完整。</p>
+      </article>
+    </section>
+
+  </main>
+
+  <!-- ============ 页脚 ============ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-logo">pen-pig:~$</span>
+      <span class="footer-note">© 2026 pen-pig — 用好奇心与 AI 造东西</span>
+      <a class="footer-top" href="os.html#top">回到顶部<i aria-hidden="true">↑</i></a>
+    </div>
+  </footer>
+
+  <script src="assets/v86/libv86.js"></script>
+  <script src="assets/js/os-demo.js" defer></script>
+</body>
+</html>

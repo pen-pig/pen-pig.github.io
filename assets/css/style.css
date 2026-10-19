@@ -713,6 +713,13 @@ b, strong { font-weight: 700; color: var(--text-strong); }
 .proj-link i { font-style: normal; color: var(--accent); margin-left: 7px; display: inline-block; transition: transform 180ms var(--ease-out); }
 .proj-link:hover { color: var(--accent); border-color: var(--accent); }
 .proj-link:hover i { transform: translateX(4px); }
+.proj-links { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.proj-link-run {
+  color: var(--accent);
+  border-bottom: 1px solid rgba(70, 243, 167, 0.32);
+  white-space: nowrap;
+}
+.proj-link-run:hover { border-color: var(--accent); }
 .proj-lang {
   display: inline-flex;
   align-items: center;
@@ -892,6 +899,238 @@ b, strong { font-weight: 700; color: var(--text-strong); }
 .footer-top { color: var(--dim); transition: color 150ms ease; }
 .footer-top i { font-style: normal; margin-left: 7px; }
 .footer-top:hover { color: var(--accent); }
+
+/* ============================================================
+   os.html — 浏览器运行页（v86 模拟器）
+   ============================================================ */
+.os-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: calc(var(--nav-h) + 56px) 40px 90px;
+}
+
+/* ---- 标题区 ---- */
+.os-back {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--dim);
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--line);
+  transition: color 150ms ease;
+}
+.os-back:hover { color: var(--accent); }
+
+.os-title {
+  font-size: clamp(2rem, 4.6vw, 3.1rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+  line-height: 1.25;
+  margin: 18px 0 20px;
+}
+.os-title em {
+  font-style: normal;
+  color: var(--accent);
+  text-shadow: 0 0 26px rgba(70, 243, 167, 0.35);
+}
+.os-sub {
+  max-width: 66ch;
+  color: var(--dim);
+  font-size: 1.05rem;
+  line-height: 1.95;
+  margin-bottom: 44px;
+}
+.os-sub b { color: var(--text); }
+
+/* ---- 模拟器舞台 ---- */
+.os-stage {
+  position: relative;
+  padding: 30px 30px 24px;
+  margin-bottom: 34px;
+}
+.os-stage .hud { position: absolute; }
+.os-stage .hud-tl { top: 12px; left: 16px; }
+.os-stage .hud-tr { top: 12px; right: 16px; }
+.os-stage .hud-bl { bottom: 76px; left: 16px; }
+.os-stage .hud-br { bottom: 76px; right: 16px; }
+.hud {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--faint);
+  pointer-events: none;
+  user-select: none;
+}
+
+.os-screen-wrap {
+  position: relative;
+  background: #01030a;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+/* CRT 微弧度 + 内阴影，像一台显示器 */
+.os-screen-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.42) 100%);
+}
+
+.os-screen {
+  position: relative;
+  z-index: 1;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+}
+.os-screen:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+/* v86 注入的 canvas：整数放大保真 + 磷光余晖 */
+.os-screen canvas {
+  display: block;
+  max-width: 100%;
+  height: auto !important;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 14px rgba(70, 243, 167, 0.12));
+}
+
+/* ---- 覆盖层 ---- */
+.os-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 6, 10, 0.82);
+  backdrop-filter: blur(3px);
+  transition: opacity 420ms var(--ease-out);
+}
+.os-overlay-hidden { opacity: 0; pointer-events: none; }
+.os-overlay-inner {
+  max-width: 52ch;
+  padding: 34px 38px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: rgba(11, 16, 23, 0.72);
+}
+.os-overlay-kicker {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.os-overlay-text {
+  color: var(--dim);
+  font-size: 0.98rem;
+  line-height: 1.85;
+}
+.os-overlay-text code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  color: var(--amber);
+  background: rgba(255, 180, 84, 0.1);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.os-overlay-warn .os-overlay-kicker { color: var(--amber); }
+
+/* ---- 加载进度 ---- */
+.os-progress {
+  height: 3px;
+  margin-top: 18px;
+  background: var(--line-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.os-progress-bar {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent), var(--amber));
+  transition: width 220ms linear;
+}
+
+/* ---- 控制条 ---- */
+.os-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.os-controls-left {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.os-controls .btn:disabled { opacity: 0.38; pointer-events: none; }
+.os-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+}
+
+/* ---- 说明区 ---- */
+.os-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+}
+.os-info-card {
+  padding: 26px 28px 22px;
+}
+.os-info-card h2 {
+  font-family: var(--mono);
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin-bottom: 14px;
+}
+.os-info-card h2::before {
+  content: "// ";
+  color: var(--accent);
+}
+.os-info-card p {
+  color: var(--dim);
+  font-size: 0.93rem;
+  line-height: 1.9;
+  margin-bottom: 12px;
+}
+.os-info-card p:last-child { margin-bottom: 0; }
+.os-info-card code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  color: var(--amber);
+  background: rgba(255, 180, 84, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+@media (max-width: 1024px) {
+  .os-info { grid-template-columns: 1fr; gap: 20px; }
+  .os-stage .hud-bl, .os-stage .hud-br { display: none; }
+}
+@media (max-width: 768px) {
+  .os-page { padding: calc(var(--nav-h) + 34px) 20px 70px; }
+  .os-stage { padding: 22px 16px 18px; }
+  .os-screen { min-height: 300px; }
+  .os-controls { justify-content: center; }
+}
 
 /* ============================================================
    滚动显现动画
