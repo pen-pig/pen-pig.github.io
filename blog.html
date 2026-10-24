@@ -123,7 +123,7 @@
   <div class="modal" id="pwModal" hidden>
     <div class="modal-card panel">
       <h2 class="modal-title">解锁编辑模式</h2>
-      <p class="modal-sub">输入发布密码。纯前端密码只防无意访问，防不了刻意破解——图个方便。</p>
+      <p class="modal-sub">输入发布密码。密码在浏览器里算哈希后比对，源码里只有盐和哈希、没有明文。</p>
       <input class="modal-input" id="pwInput" type="password" placeholder="发布密码" autocomplete="off">
       <p class="modal-error" id="pwError" hidden>密码不对，再试试。</p>
       <div class="modal-ops">

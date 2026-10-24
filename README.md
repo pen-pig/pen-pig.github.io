@@ -13,17 +13,42 @@
 | `blog.html` | 博客：文章公开可读，发布需密码 |
 | `clawler.html` | gdgzoi-clawler 的网页试用（终端交互演示） |
 | `site-demo.html` | PHP 项目（网站本体）的网页试用（7 模块导览） |
-| `gateway/` | 评论网关（Node 服务，零依赖）：人机验证 + IP 限流 + 本地存储 |
+| `gateway/` | 评论网关（Node 服务，零依赖）：人机验证 + IP 限流 + 本地存储；`hashpass.js` 生成发布密码的哈希 |
 | `assets/css/style.css` | 视觉系统，设计令牌在文件顶部 `:root` |
 | `assets/js/main.js` | 动效：boot log 打字机、标题解码、滚动显现、数字滚动 |
 | `assets/js/os-demo.js` | os.html 的模拟器控制：镜像探测 / 下载进度 / 启动 / 重启 / 全屏 |
-| `assets/js/blog.js` | 博客页：文章渲染、迷你 Markdown、发布密码、评论区挂载 |
+| `assets/js/blog.js` | 博客页：文章渲染、迷你 Markdown、发布密码校验、评论区挂载 |
 | `assets/js/comments.js` | 评论区前端：验证码模式探测、提交、渲染 |
 | `assets/data/posts.json` | 文章基线数据（4 篇） |
 | `assets/fonts/` | JetBrains Mono + Noto Sans SC，按页面分组子集化 |
 | `assets/v86/` | v86 模拟器：`libv86.js` + `v86.wasm` + `bios/`（seabios / vgabios） |
 | `assets/os/cerulia.img` | CeruliaOS 磁盘镜像（约 0.8MB，来自 `tools/make_image.py` 的 `os-image.bin`） |
 | `.nojekyll` | 纯静态站点，跳过 Jekyll 处理 |
+
+## 博客发布密码
+
+密码**不以明文形式存在于任何源码里**。`assets/js/blog.js` 只存「盐 + 迭代次数 + 哈希」三件套，解锁时在浏览器里算哈希后比对：
+
+```
+H0 = SHA256(salt || password)
+Hi+1 = SHA256(Hi)      重复 iterations 次
+```
+
+- 加盐：通用彩虹表直接失效
+- 迭代 10000 轮：单次猜测的爆破成本抬高上万倍
+- 比对用常数时间实现，不因前缀相同而提前返回
+
+优先走 `crypto.subtle`（WebCrypto）；页面不在安全上下文（没有 HTTPS / 不是 localhost）时自动退回内置的纯 JS SHA-256 实现，两条路径算法完全一致、结果相同。
+
+### 改密码
+
+```bash
+node gateway/hashpass.js "新密码"
+```
+
+输出的 JSON 原样粘到 `assets/js/blog.js` 的 `BLOG_AUTH` 里，提交推送即可。脚本会打印自检结果（正确密码匹配、错误密码不匹配）。
+
+> **边界**：这是前端校验，源码里没有明文密码，但拦不住刻意改代码绕过的人。真要挡住，得把校验挪到服务端（网关已经在做评论侧的限流和验证码了，加一个发布接口是同一套机制）。
 
 ## 浏览器运行 CeruliaOS（os.html）
 
