@@ -19,8 +19,8 @@
   var BLOG_AUTH = {
     alg: "sha256-iter",
     iterations: 10000,
-    salt: "59d977cbc2553aa82e69290f44b3056b",
-    hash: "fc40d106fea9e5ab4db6d6a8d43c610a780e2a0878d7e78c39c942516eabac22"
+    salt: "52f6d42b2d4efb5dfd66413a493d1e00",
+    hash: "a7a1fe4f843238d81e56f8e525791ffafda06db90adc162edeb7e79abd544eb4"
   };
 
   /* ---------- 工具 ---------- */
