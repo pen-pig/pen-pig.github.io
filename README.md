@@ -13,12 +13,12 @@
 | `blog.html` | 博客：文章公开可读，发布需密码 |
 | `clawler.html` | gdgzoi-clawler 的网页试用（终端交互演示） |
 | `site-demo.html` | PHP 项目（网站本体）的网页试用（7 模块导览） |
-| `gateway/` | 评论网关（Node 服务，零依赖）：人机验证 + IP 限流 + 本地存储；`hashpass.js` 生成发布密码的哈希 |
+| `gateway/` | 评论网关（Node 服务，只用标准库）：人机验证 + IP 限流 + 本地存储；`hashpass.js` 生成发布密码的哈希 |
 | `assets/css/style.css` | 视觉系统，设计令牌在文件顶部 `:root` |
 | `assets/js/main.js` | 动效：boot log 打字机、标题解码、滚动显现、数字滚动 |
 | `assets/js/os-demo.js` | os.html 的模拟器控制：镜像探测 / 下载进度 / 启动 / 重启 / 全屏 |
 | `assets/js/blog.js` | 博客页：文章渲染、迷你 Markdown、发布密码校验、评论区挂载 |
-| `assets/js/comments.js` | 评论区前端：验证码模式探测、提交、渲染 |
+| `assets/js/comments.js` | 评论区前端：验证码模式探测、提交、渲染、楼中楼回复、删除码 |
 | `assets/data/posts.json` | 文章基线数据（4 篇） |
 | `assets/fonts/` | JetBrains Mono + Noto Sans SC，按页面分组子集化 |
 | `assets/v86/` | v86 模拟器：`libv86.js` + `v86.wasm` + `bios/`（seabios / vgabios） |
@@ -34,9 +34,7 @@ H0 = SHA256(salt || password)
 Hi+1 = SHA256(Hi)      重复 iterations 次
 ```
 
-- 加盐：通用彩虹表直接失效
-- 迭代 10000 轮：单次猜测的爆破成本抬高上万倍
-- 比对用常数时间实现，不因前缀相同而提前返回
+盐是随机生成的，迭代次数 10000，比对用常数时间实现。
 
 优先走 `crypto.subtle`（WebCrypto）；页面不在安全上下文（没有 HTTPS / 不是 localhost）时自动退回内置的纯 JS SHA-256 实现，两条路径算法完全一致、结果相同。
 
@@ -48,17 +46,17 @@ node gateway/hashpass.js "新密码"
 
 输出的 JSON 原样粘到 `assets/js/blog.js` 的 `BLOG_AUTH` 里，提交推送即可。脚本会打印自检结果（正确密码匹配、错误密码不匹配）。
 
-> **边界**：这是前端校验，源码里没有明文密码，但拦不住刻意改代码绕过的人。真要挡住，得把校验挪到服务端（网关已经在做评论侧的限流和验证码了，加一个发布接口是同一套机制）。
+> 这是前端校验：源码里没有明文密码，但改代码可以绕过。
 
 ## 浏览器运行 CeruliaOS（os.html）
 
-`os.html` 用 [v86](https://copy.sh/v86/)（WebAssembly x86 模拟器）在网页里启动真实的 CeruliaOS 磁盘镜像，走完整的 **BIOS → MBR → boot sector → stage2 → kernel** 引导链——屏幕输出全部是模拟器现场执行机器码的结果，没有任何录屏成分。
+`os.html` 用 [v86](https://copy.sh/v86/)（WebAssembly x86 模拟器）在网页里启动真实的 CeruliaOS 磁盘镜像，走完整的 BIOS → MBR → boot sector → stage2 → kernel 引导链。屏幕上的每个字符都是模拟器现场执行机器码的输出。
 
-要点：
+实现上几个要注意的地方：
 
-- 本版 v86 的 `v86.wasm` **不内置 BIOS**，`seabios.bin` / `vgabios.bin` 必须显式配置（已托管在 `assets/v86/bios/`）
+- 本版 v86 的 `v86.wasm` 不内置 BIOS，`seabios.bin` / `vgabios.bin` 必须显式配置（已托管在 `assets/v86/bios/`）
 - 镜像用 `fetch` 整块下载（带进度条）后以 buffer 模式挂到 hda；不用 v86 的 async 分块，几 MB 一次加载更稳
-- 新版 v86 构造后由 `autostart: true` 自动启动，**不能手动调 `run()`**（内部 core 未就绪会抛 TypeError）
+- 新版 v86 构造后由 `autostart: true` 自动启动，不能手动调 `run()`（内部 core 未就绪会抛 TypeError）
 
 ### 更新镜像
 
@@ -75,34 +73,34 @@ cp os-image.bin <本站>/assets/os/cerulia.img
 
 博客的评论区需要一个后端：GitHub Pages 是纯静态托管，做不了 IP 限流和验证码校验，所以评论功能由一个独立的 Node 服务承担。
 
-**设计取舍**：不接云服务数据库、不用 GitHub Issues、不需要任何 token 或密钥。评论存在网关自己的 `data/comments.json` 里，落盘用「临时文件 + rename」保证原子性。
+存储：评论存在网关自己的 `data/comments.json` 里，落盘用「临时文件 + rename」保证原子性。不接云服务数据库、不用 GitHub Issues、不需要任何 token 或密钥。
 
-### 讨论区模型（楼号 · 楼中楼 · 配图 · 删自己的评论）
+### 评论区
 
-评论区不是「一串留言」，而是一块讨论区，交互模型参考社团网站的讨论区：
+评论区按社团网站的讨论区模型实现（forum.php / post.php）：
 
 | 能力 | 说明 |
 | --- | --- |
-| 楼号 | 每条评论一个 `#N 楼`，由服务端在创建时按本文顺序固定，**删掉别的评论也不会让楼号漂移** |
+| 楼号 | 每条评论一个 `#N 楼`，由服务端在创建时按本文顺序固定 |
 | 楼中楼 | 点「回复」进入回复态，回复挂在目标楼下面缩进显示，可取消 |
 | 头像 | 昵称首字圆头像，颜色按昵称哈希固定（同一昵称同一颜色） |
-| 配图 | 单张 jpg / png / gif / webp，≤2MB。服务端按**魔数**校验真实类型（不信 MIME 头），落盘到 `data/uploads/` |
-| 删自己的评论 | 匿名没有账号体系，所以用「**删除码**」代替密码：提交时服务端随机生成明文**只回给提交者一次**，库里只留 SHA-256 哈希，之后凭删除码删掉自己那条 |
+| 配图 | 单张 jpg / png / gif / webp，≤2MB，服务端按魔数校验真实类型，存 `data/uploads/` |
+| 删自己的评论 | 匿名没有账号体系，所以用「删除码」代替密码：提交时服务端随机生成明文只回给提交者一次，库里只留 SHA-256 哈希，之后凭删除码删掉自己那条 |
 
-配图文件名走严格白名单正则（`img_<16位hex>.<ext>`）+ `realpath` 校验，路径穿越直接 400。
+配图文件名走白名单正则（`img_<16位hex>.<ext>`）+ `realpath` 校验，路径穿越直接 400。
 
-### 三个关键实现细节
+### 实现说明
 
-1. **限流必须在服务端做。** 纯前端的 localStorage 限流形同虚场。规则是同 IP 10 秒最多 2 次，另有每小时 20 次兜底（阈值可用 `RATE_WINDOW_MAX` / `RATE_HOUR_MAX` 覆盖，方便联调）。
-2. **限流表和验证码答案都要落盘。** 线上是多副本负载均衡，内存里的 Map 各副本互不可见——放在内存里等于没限流。读改写用同步 IO，避免两个请求读到同一份旧表后互相覆盖。
-3. **客户端自带 captcha id。** 图片 URL 里带上 id，服务端按这个 id 存答案，保证「看到的图」和「提交的 id」是同一张验证码。
+1. 限流在服务端做。规则是同 IP 10 秒最多 2 次，另有每小时 20 次兜底（阈值可用 `RATE_WINDOW_MAX` / `RATE_HOUR_MAX` 覆盖，方便联调）。
+2. 限流表和验证码答案落盘。线上是多副本负载均衡，内存里的 Map 各副本互不可见。读改写用同步 IO，避免两个请求读到同一份旧表后互相覆盖。
+3. 验证码由客户端自带 id。图片 URL 里带上 id，服务端按这个 id 存答案，保证「看到的图」和「提交的 id」是同一张。
 
 ### 人机验证：双引擎
 
 | 模式 | 条件 | 说明 |
 | --- | --- | --- |
-| Cloudflare Turnstile | 配置了 `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` | 免费无限量，服务端调 siteverify 校验，secret 永不下发 |
-| 自研 PNG 点阵验证码 | 未配置密钥时自动退回 | 5×7 点阵字模 + 干扰线 + 噪点，答案只在服务端；图像里没有可解析字符，只能 OCR |
+| Cloudflare Turnstile | 配置了 `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` | 服务端调 siteverify 校验，secret 不下发到前端 |
+| 自研 PNG 点阵验证码 | 未配置密钥时自动退回 | 5×7 点阵字模 + 干扰线 + 噪点，答案只存服务端 |
 
 前端自动探测模式：`GET /api/captcha` 返回 `image/png` 就是本地模式，返回 JSON 就切到 Turnstile 挂件。
 
@@ -132,9 +130,9 @@ var SHARE_CODE = "OBVHYSCDUX";
 var GATEWAY = "https://pen-pig-comment-gateway.app.workbuddy.host";
 ```
 
-### 数据备份（重要）
+### 数据备份
 
-**重新部署网关会覆盖线上的 `data/` 目录**，也就是「重新部署 = 清空线上评论」。所以每次重新部署前先拉一份回来：
+重新部署网关会覆盖线上的 `data/` 目录，也就是「重新部署 = 清空线上评论」。所以每次重新部署前先拉一份回来：
 
 ```bash
 python gateway/backup.py pull    # 线上 -> 本地 data/comments.json + data/uploads/ 配图
@@ -143,7 +141,7 @@ python gateway/backup.py pull    # 线上 -> 本地 data/comments.json + data/up
 
 `python gateway/backup.py show` 可以同时看线上和本地各有多少条。
 
-> 备份只存公开字段，删除码的哈希不进备份——**重新部署后旧评论的删除码失效**（旧评论没有删除码机制，本来也无法自助删除）。
+> 备份只存公开字段，删除码的哈希不进备份，所以重新部署后旧评论的删除码会失效（旧评论没有删除码机制，本来也无法自助删除）。
 
 ### 接口
 
