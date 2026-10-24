@@ -46,6 +46,8 @@ Hi+1 = SHA256(Hi)      重复 iterations 次
 
 优先走 `crypto.subtle`（WebCrypto）；页面不在安全上下文（没有 HTTPS / 不是 localhost）时自动退回内置的纯 JS SHA-256 实现，两条路径算法完全一致、结果相同。
 
+输入的密码会先做归一化再算哈希：全角 ASCII 转半角、全角空格转半角、去掉首尾空白。中文输入法会把 `!` `#` `~` 之类打成全角，复制粘贴又会带上首尾空白，不归一化的话算出来的哈希对不上。前端 `assets/js/blog.js` 的 `normalizePassword` 和网关 `gateway/server.js` 的同名函数是同一套规则，两边必须保持一致。
+
 ### 改密码
 
 ```bash
@@ -53,6 +55,8 @@ node gateway/hashpass.js "新密码"
 ```
 
 输出的 JSON 要贴到两处：`assets/js/blog.js` 的 `BLOG_AUTH`（浏览器本地比对）和 `gateway/server.js` 的 `PUBLISH_AUTH`（网关校验）。脚本会打印自检结果（正确密码匹配、错误密码不匹配）。
+
+改完 `assets/js/blog.js` 记得把 `blog.html` 里的引用版本号往上提一位（`blog.js?v=N`），否则浏览器和 CDN 会继续用旧的那份。
 
 > 密码只在解锁时通过 HTTPS 发给网关一次；源码和网关配置里都只有哈希。
 
