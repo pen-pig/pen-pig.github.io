@@ -543,10 +543,25 @@ function sha256Buf(buf) {
   return require("crypto").createHash("sha256").update(buf).digest();
 }
 
+// 密码归一化：中文输入法会把 ! # ~ 之类打成全角，直接算哈希必然对不上。
+// 这里统一把全角 ASCII 转成半角，并去掉首尾空白。
+// 前端的 normalizePassword 是同一套规则，两边结果必须一致。
+function normalizePassword(pw) {
+  let s = String(pw == null ? "" : pw);
+  let out = "";
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i);
+    if (code >= 0xff01 && code <= 0xff5e) out += String.fromCharCode(code - 0xfee0);
+    else if (code === 0x3000) out += " ";
+    else out += s.charAt(i);
+  }
+  return out.replace(/^\s+|\s+$/g, "");
+}
+
 // 和前端同一套算法：H0 = SHA256(salt || password)，再迭代 iterations 次
 function hashPasswordIter(password, saltHex, iterations) {
   const salt = Buffer.from(String(saltHex || ""), "hex");
-  let h = sha256Buf(Buffer.concat([salt, Buffer.from(String(password), "utf8")]));
+  let h = sha256Buf(Buffer.concat([salt, Buffer.from(normalizePassword(password), "utf8")]));
   for (let i = 0; i < (iterations || 10000); i++) h = sha256Buf(h);
   return h.toString("hex");
 }

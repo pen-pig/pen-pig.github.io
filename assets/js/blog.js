@@ -160,10 +160,27 @@
     return out;
   }
 
+  /* 密码归一化：中文输入法会把 ! # ~ 之类打成全角，直接算哈希必然对不上。
+     这里统一把全角 ASCII 转成半角，并去掉首尾空白。
+     网关的 checkPublishPassword 用同一套规则，两边结果必须一致。 */
+  function normalizePassword(pw) {
+    var s = String(pw == null ? "" : pw);
+    var out = "";
+    for (var i = 0; i < s.length; i++) {
+      var code = s.charCodeAt(i);
+      // 全角 ASCII（！＂＃…～）→ 半角
+      if (code >= 0xff01 && code <= 0xff5e) out += String.fromCharCode(code - 0xfee0);
+      // 全角空格 → 半角空格
+      else if (code === 0x3000) out += " ";
+      else out += s.charAt(i);
+    }
+    return out.replace(/^\s+|\s+$/g, "");
+  }
+
   /* 算密码哈希。两条路径算法完全一致，结果也一致。 */
   function hashPassword(password) {
     var salt = hexToBytes(BLOG_AUTH.salt);
-    var pw = utf8Bytes(password);
+    var pw = utf8Bytes(normalizePassword(password));
     var iters = BLOG_AUTH.iterations;
     var subtle = window.crypto && window.crypto.subtle;
 
