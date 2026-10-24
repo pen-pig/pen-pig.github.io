@@ -11,12 +11,15 @@
 | `index.html` | 单页全部内容（关于 / 项目 / 竞赛 / 联系） |
 | `os.html` | 浏览器里运行 CeruliaOS 的演示页（v86 模拟器） |
 | `blog.html` | 博客：文章公开可读，发布需密码 |
+| `admin.html` | 后台管理页：登录同一把发布密码后，可改站点文案、管理文章、管理评论、改发布密码 |
 | `clawler.html` | gdgzoi-clawler 的网页试用（终端交互演示） |
 | `site-demo.html` | PHP 项目（网站本体）的网页试用（7 模块导览） |
 | `gateway/` | 网关（Node 服务，只用标准库）：人机验证 + IP 限流 + 本地存储 + 博客发布接口；`hashpass.js` 生成发布密码的哈希 |
 | `assets/css/style.css` | 视觉系统，设计令牌在文件顶部 `:root` |
-| `assets/js/main.js` | 动效：boot log 打字机、标题解码、滚动显现、数字滚动 |
+| `assets/js/main.js` | 动效：boot log 打字机、标题解码、滚动显现、数字滚动（等文案就位后重跑） |
+| `assets/js/site.js` | 首页文案覆盖层：拉取网关文案后覆盖 `index.html` 的对应锚点，HTML 原文保留作静态兜底 |
 | `assets/js/os-demo.js` | os.html 的模拟器控制：镜像探测 / 下载进度 / 启动 / 重启 / 全屏 |
+| `assets/js/admin.js` | 后台页：解锁、文案编辑、文章管理、评论管理、改密码 |
 | `assets/js/blog.js` | 博客页：文章渲染、迷你 Markdown、发布密码校验、发布/删除、评论区挂载 |
 | `assets/js/comments.js` | 评论区前端：验证码、提交、渲染、楼中楼回复、删除码 |
 | `assets/data/posts.json` | 文章快照（网关不可用时的退路；线上正式内容在网关的 `data/posts.json`） |
@@ -149,13 +152,13 @@ var GATEWAY = "https://pen-pig-comment-gateway.app.workbuddy.host";
 重新部署网关会覆盖线上的 `data/` 目录，也就是「重新部署 = 清空线上评论和文章」。所以每次重新部署前先拉一份回来：
 
 ```bash
-python gateway/backup.py pull    # 线上 -> 本地 data/comments.json + data/uploads/ 配图
+python gateway/backup.py pull    # 线上 -> 本地 data/comments.json + data/uploads/ 配图 + data/posts.json + data/site.json + data/publish-auth.json
 # ... 重新部署 ...
 ```
 
 `python gateway/backup.py show` 可以同时看线上和本地各有多少条。
 
-> 备份只存公开字段，删除码的哈希不进备份，所以重新部署后旧评论的删除码会失效（旧评论没有删除码机制，本来也无法自助删除）。
+> 备份只存公开字段，删除码的哈希不进备份，所以重新部署后旧评论的删除码会失效（旧评论没有删除码机制，本来也无法自助删除）。`data/site.json`（后台改过的站点文案）和 `data/publish-auth.json`（在后台改过的发布密码哈希）也会被覆盖，所以都要先 pull 再部署。
 
 ### 接口
 
@@ -169,9 +172,36 @@ python gateway/backup.py pull    # 线上 -> 本地 data/comments.json + data/up
 | POST | `/api/comments` | 提交评论（支持 `replyTo` 回复某楼、`image` 配图；返回一次性 `delKey`） |
 | POST | `/api/comments/delete` | 用删除码删掉自己那条（`{id, delKey}`） |
 | GET | `/api/posts` | 读取文章列表 |
+| GET | `/api/site` | 读取站点文案（公开；返回字段元信息 `fields` + 当前值 `values`） |
+| GET | `/api/publish/auth` | 读取当前发布密码参数（`alg`/`iterations`/`salt`/`hash`），前端动态获取哈希用 |
 | POST | `/api/publish/token` | 用发布密码换临时令牌（`{password}`） |
 | POST | `/api/posts` | 发布/覆盖一篇文章（`{token \| password, captchaId, captchaAnswer, post}`） |
 | POST | `/api/posts/delete` | 删掉一篇文章（`{token \| password, captchaId, captchaAnswer, id}`） |
+| POST | `/api/site` | 写入站点文案（`{token, captchaId, captchaAnswer, values}`；按白名单字段校验，URL 字段只放行 http/https） |
+| GET | `/api/admin/comments?token=<t>` | 所有文章的评论总览（含 `pinned` 标记） |
+| POST | `/api/admin/comments/delete` | 后台删除任意评论，不需要删除码（`{token, captchaId, captchaAnswer, id}`） |
+| POST | `/api/admin/comments/pin` | 置顶/取消置顶一条评论（`{token, id, pinned}`） |
+| POST | `/api/admin/password` | 改发布密码（`{token, oldPassword, newPassword, captchaId, captchaAnswer}`），校验旧密码 + 验证码后写入哈希 |
+
+## 后台管理（admin.html）
+
+`admin.html` 是独立的后台页：打开后用**同一把发布密码**解锁，解锁后四个分区可分别操作。它把原来散落在博客页里的编辑能力，以及新增的文案/评论管理，统一收在一个面板里。
+
+| 分区 | 能做什么 |
+| --- | --- |
+| 站点文案 | 改首页的可变文案——身份/简介、关于段落、三个项目卡的名称·标语·描述·链接、竞赛 UID、联系方式、页脚、启动日志、Ticker。改完点保存立刻生效，不用改代码重新部署 |
+| 文章 | 文章列表 / 编辑器 / 发布 / 删除 / 本地草稿，功能和博客页一致 |
+| 评论 | 所有文章的评论总览，可删任意评论（不需要删除码）、置顶/取消置顶 |
+| 密码 | 在后台改发布密码，不用再跑 `hashpass.js` 贴两处哈希 |
+
+站点文案存在网关的 `gateway/data/site.json` 里，按 `SITE_FIELDS` 白名单字段校验（长度上限、`url` 类型只放行 `http/https`），后台不可用时首页仍显示 `index.html` 里写死的原文。`index.html` 的每个可改文案节点都带稳定 id（如 `heroName`、`proj1Desc`），`assets/js/site.js` 拉到值后覆盖对应节点。
+
+进入后台的入口在 `blog.html` 的工具条（「后台管理」按钮），或直接打开 `admin.html`。
+
+### 改密码的两种方式
+
+- **后台里改**：后台「密码」分区，填旧密码 + 新密码 + 验证码即可，前端会动态从 `/api/publish/auth` 拿到当前哈希，不再依赖源码里写死的那份。
+- **脚本改**：仍可用 `node gateway/hashpass.js "新密码"`，把输出的哈希贴到 `gateway/server.js` 的 `PUBLISH_AUTH`（以及 `assets/js/blog.js` 的 `BLOG_AUTH`）。
 
 ## 本地预览
 

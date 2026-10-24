@@ -76,6 +76,20 @@ def pull():
     except Exception as e:
         print(f"  [warn] 文章拉取失败 {e}")
 
+    # 站点文案与发布密码配置：后台改过的内容也存在网关 data/ 里，一并带回来
+    for name, path, ep in (
+        ("site.json", os.path.join(HERE, "data", "site.json"), "/api/site"),
+        ("publish-auth.json", os.path.join(HERE, "data", "publish-auth.json"), "/api/publish/auth"),
+    ):
+        try:
+            data = get(ep)
+            payload = data.get("values", data) if name == "site.json" else data
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+            print(f"已拉取 {name} -> {path}")
+        except Exception as e:
+            print(f"  [warn] {name} 拉取失败（旧版网关可能没有该接口，可忽略）：{e}")
+
     return comments
 
 
