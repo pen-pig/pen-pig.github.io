@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>在浏览器里试用 website · pen-pig</title>
+  <meta name="description" content="社团网站（PHP + JSON 存储）的网页模块导览：OJ、用户系统、头像、签到、搜索、备份、网盘。">
+  <meta property="og:title" content="试用 website — 模块导览">
+  <meta property="og:description" content="社团网站的网页交互导览。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pen-pig.github.io/site-demo.html">
+  <meta name="theme-color" content="#06080c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306080c'/%3E%3Cpath d='M18 20l16 12-16 12' stroke='%2346f3a7' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+  <!-- 氛围层：扫描线 / 噪点 / 光标辉光 -->
+  <div class="fx fx-scan" aria-hidden="true"></div>
+  <div class="fx fx-noise" aria-hidden="true"></div>
+  <div class="fx fx-cursor" id="cursorGlow" aria-hidden="true"></div>
+
+  <!-- ============ 导航 ============ -->
+  <header class="nav" id="top">
+    <a class="nav-logo" href="index.html" aria-label="返回主页">
+      <span class="nav-user">pen-pig@home</span><span class="nav-colon">:</span><span class="nav-path">~</span><span class="nav-dollar">$</span>
+    </a>
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="index.html#about"><i>01</i>关于</a>
+      <a href="index.html#projects"><i>02</i>项目</a>
+      <a href="index.html#oi"><i>03</i>竞赛</a>
+      <a href="index.html#contact"><i>04</i>联系</a>
+      <a href="blog.html"><i>05</i>博客</a>
+    </nav>
+    <span class="nav-status"><i class="pulse-dot" aria-hidden="true"></i>ONLINE</span>
+  </header>
+
+  <main class="tour-page">
+
+    <!-- ============ 标题区 ============ -->
+    <section class="tour-head">
+      <a class="os-back" href="index.html#projects">← 返回项目区</a>
+      <p class="tape"><span>INTERACTIVE DEMO</span><span class="tape-dim">// MODULE TOUR</span></p>
+      <h1 class="os-title">在浏览器里逛 <em>website</em></h1>
+      <p class="os-sub">这是社团网站（PHP + JSON 文件存储，无数据库）的<b>模块导览</b>。PHP 跑不了 GitHub Pages，所以这里把每个模块「拆」给你看：职责、技术要点和界面示意。左边选一个模块开始。</p>
+    </section>
+
+    <!-- ============ 导览主体 ============ -->
+    <div class="tour-layout">
+
+      <!-- 模块导航 -->
+      <nav class="tour-nav panel" aria-label="模块导航">
+        <p class="tour-nav-title">// MODULES</p>
+        <button class="tour-nav-item on" type="button" data-mod="oj"><i>01</i>OJ 题库</button>
+        <button class="tour-nav-item" type="button" data-mod="user"><i>02</i>用户系统</button>
+        <button class="tour-nav-item" type="button" data-mod="avatar"><i>03</i>头像</button>
+        <button class="tour-nav-item" type="button" data-mod="checkin"><i>04</i>签到</button>
+        <button class="tour-nav-item" type="button" data-mod="search"><i>05</i>搜索</button>
+        <button class="tour-nav-item" type="button" data-mod="backup"><i>06</i>备份</button>
+        <button class="tour-nav-item" type="button" data-mod="disk"><i>07</i>网盘</button>
+        <p class="tour-nav-note">共 7 个模块<br>已上线于社团服务器</p>
+      </nav>
+
+      <!-- 模块详情 -->
+      <div class="tour-content">
+
+        <!-- 01 OJ 题库 -->
+        <article class="tour-panel panel on" data-panel="oj">
+          <header class="tour-panel-head">
+            <p class="tour-kicker">// MODULE 01</p>
+            <h2>OJ 题库</h2>
+            <span class="tour-chip tour-chip-ok">已上线</span>
+          </header>
+          <p class="tour-desc">社团自己的 OJ：题目列表、在线判题、提交记录、比赛。PHP 5.6+ 兼容，判题结果落 JSON，前端 Bootstrap。</p>
+          <div class="tour-mock">
+            <p class="tour-mock-label">界面示意 · 题目列表（非真实截图）</p>
+            <table class="mock-table">
+              <thead><tr><th>#</th><th>标题</th><th>通过率</th><th>难度</th></tr></thead>
+              <tbody>
+                <tr><td>1001</td><td>A + B Problem</td><td>92%</td><td class="lv-1">入门</td></tr>
+                <tr><td>1002</td><td>数列求和</td><td>74%</td><td class="lv-2">普及</td></tr>
+                <tr><td>1003</td><td>二分答案</td><td>41%</td><td class="lv-3">提高</td></tr>
+                <tr><td>1004</td><td>树形 DP 入门</td><td>23%</td><td class="lv-4">省选</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ul class="tour-points">
+            <li><b>判题</b>沙箱比对输出，支持 SPJ 特殊评测</li>
+            <li><b>存储</b>题目与提交都是 JSON 文件，无需数据库</li>
+            <li><b>比赛</b>实时榜 / 赛后榜，罚时计算</li>
+          </ul>
+        </article>
+
+        <!-- 02 用户系统 -->
+        <article class="tour-panel panel" data-panel="user">
+          <header class="tour-panel-head">
+            <p class="tour-kicker">// MODULE 02</p>
+            <h2>用户系统</h2>
+            <span class="tour-chip tour-chip-ok">已上线</span>
+          </header>
+          <p class="tour-desc">注册、登录、权限分级（管理员 / 社员 / 游客）。密码加盐哈希，会话用服务端 session。</p>
+          <div class="tour-mock">
+            <p class="tour-mock-label">界面示意 · 登录卡（非真实截图）</p>
+            <div class="mock-login">
+              <p class="mock-login-title">登录 GDGZOI</p>
+              <p class="mock-field">用户名 <span>pen-pig</span></p>
+              <p class="mock-field">密码 <span>••••••••</span></p>
+              <p class="mock-btn">登 录</p>
+            </div>
+          </div>
+          <ul class="tour-points">
+            <li><b>安全</b>密码不明文存储；登录失败限流</li>
+            <li><b>权限</b>三级角色，管理操作有审计日志</li>
+            <li><b>兼容</b>PHP 5.6 起可跑，学校老服务器也能部署</li>
+          </ul>
+        </article>
+
+        <!-- 03 头像 -->
+        <article class="tour-panel panel" data-panel="avatar">
+          <header class="tour-panel-head">
+            <p class="tour-kicker">// MODULE 03</p>
+            <h2>头像</h2>
+            <span class="tour-chip tour-chip-ok">已上线</span>
+          </header>
+          <p class="tour-desc">上传、裁剪、生成多尺寸缩略图。GD 库处理，限制类型与大小，防伪装扩展名。</p>
+          <div class="tour-mock">
+            <p class="tour-mock-label">界面示意 · 头像裁剪（非真实截图）</p>
+            <div class="mock-avatars">
+              <span class="mock-avatar mock-avatar-lg">pen</span>
+              <span class="mock-avatar">XPH</span>
+              <span class="mock-avatar">wsk</span>
+              <span class="mock-avatar">zzx</span>
+              <span class="mock-avatar mock-avatar-up">＋</span>
+            </div>
+          </div>
+          <ul class="tour-points">
+            <li><b>裁剪</b>前端选框 + 服务端按坐标裁切</li>
+            <li><b>多尺寸</b>32 / 64 / 128 / 256 一次生成</li>
+            <li><b>兜底</b>没传头像时用用户名首字母生成默认图</li>
+          </ul>
+        </article>
+
+        <!-- 04 签到 -->
+        <article class="tour-panel panel" data-panel="checkin">
+          <header class="tour-panel-head">
+            <p class="tour-kicker">// MODULE 04</p>
+            <h2>签到</h2>
+            <span class="tour-chip tour-chip-ok">已上线</span>
+          </header>
+          <p class="tour-desc">每日打卡连续天数统计，防刷（同一天多次提交只记一次），月末生成签到图。</p>
+          <div class="tour-mock">
+            <p class="tour-mock-label">界面示意 · 10 月签到（非真实截图）</p>
+            <div class="mock-calendar" aria-hidden="true">
+              <span class="cal-d">一</span><span class="cal-d">二</span><span class="cal-d">三</span><span class="cal-d">四</span><span class="cal-d">五</span><span class="cal-d">六</span><span class="cal-d">日</span>
+              <span class="cal-n off"></span><span class="cal-n off"></span><span class="cal-n off"></span><span class="cal-n on">1</span><span class="cal-n on">2</span><span class="cal-n">3</span><span class="cal-n">4</span>
+              <span class="cal-n on">5</span><span class="cal-n on">6</span><span class="cal-n on">7</span><span class="cal-n on">8</span><span class="cal-n on">9</span><span class="cal-n on">10</span><span class="cal-n">11</span>
+              <span class="cal-n on">12</span><span class="cal-n on">13</span><span class="cal-n on">14</span><span class="cal-n on">15</span><span class="cal-n on">16</span><span class="cal-n on">17</span><span class="cal-n">18</span>
+              <span class="cal-n on">19</span><span class="cal-n on">20</span><span class="cal-n today">21</span><span class="cal-n">22</span><span class="cal-n">23</span><span class="cal-n">24</span><span class="cal-n">25</span>
+            </div>
+          </div>
+          <ul class="tour-points">
+            <li><b>连续签到</b>断签重置，有补签卡机制</li>
+            <li><b>防刷</b>服务端按日期去重，不信任客户端时间</li>
+          </ul>
+        </article>
+
+        <!-- 05 搜索 -->
+        <article class="tour-panel panel" data-panel="search">
+          <header class="tour-panel-head">
+            <p class="tour-kicker">// MODULE 05</p>
+            <h2>搜索</h2>
+            <span class="tour-chip tour-chip-ok">已上线</span>
+          </header>
+          <p class="tour-desc">全站搜索：题目、用户、帖子。倒排索引建在 JSON 里，中文按二元分词。</p>
+          <div class="tour-mock">
+            <p class="tour-mock-label">界面示意 · 搜索结果（非真实截图）</p>
+            <div class="mock-search">
+              <p class="mock-search-bar">🔍 二分</p>
+              <p class="mock-result"><b>题目</b> · P1003 二分答案 <i>通过率 41%</i></p>
+              <p class="mock-result"><b>帖子</b> · 二分答案的三种写法 <i>2026-09-30</i></p>
+              <p class="mock-result"><b>用户</b> · binsearch_lx <i>OIer</i></p>
+            </div>
+          </div>
+          <ul class="tour-points">
+            <li><b>分词</b>中文二元 + 英文按词，大小写不敏感</li>
+            <li><b>性能</b>索引预热缓存，避免每次全量扫描</li>
+          </ul>
+        </article>
+
+        <!-- 06 备份 -->
+        <article class="tour-panel panel" data-panel="backup">
+          <header class="tour-panel-head">
+            <p class="tour-kicker">// MODULE 06</p>
+            <h2>备份</h2>
+            <span class="tour-chip tour-chip-ok">已上线</span>
+          </header>
+          <p class="tour-desc">一键打包全部 JSON 数据，支持手动备份与每日自动备份，可下载、可回滚。</p>
+          <div class="tour-mock">
+            <p class="tour-mock-label">界面示意 · 备份列表（非真实截图）</p>
+            <table class="mock-table">
+              <thead><tr><th>备份文件</th><th>大小</th><th>时间</th></tr></thead>
+              <tbody>
+                <tr><td>backup-2026-10-23.zip</td><td>2.4 MB</td><td>03:00 自动</td></tr>
+                <tr><td>backup-2026-10-22.zip</td><td>2.4 MB</td><td>03:00 自动</td></tr>
+                <tr><td>backup-manual-1019.zip</td><td>2.3 MB</td><td>21:47 手动</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ul class="tour-points">
+            <li><b>一致性</b>备份时加写锁，避免半份文件</li>
+            <li><b>回滚</b>上传备份包即可恢复，有二次确认</li>
+          </ul>
+        </article>
+
+        <!-- 07 网盘 -->
+        <article class="tour-panel panel" data-panel="disk">
+          <header class="tour-panel-head">
+            <p class="tour-kicker">// MODULE 07</p>
+            <h2>网盘</h2>
+            <span class="tour-chip tour-chip-ok">已上线</span>
+          </header>
+          <p class="tour-desc">社团文件盘：课件、题单、比赛数据。上传下载、目录管理、分享链接（可设过期）。</p>
+          <div class="tour-mock">
+            <p class="tour-mock-label">界面示意 · 文件列表（非真实截图）</p>
+            <table class="mock-table">
+              <thead><tr><th>名称</th><th>大小</th><th>修改时间</th></tr></thead>
+              <tbody>
+                <tr><td>📁 2026 秋季赛</td><td>—</td><td>10-18 21:03</td></tr>
+                <tr><td>📁 课件</td><td>—</td><td>10-11 09:12</td></tr>
+                <tr><td>📄 题单-动态规划.pdf</td><td>1.8 MB</td><td>10-09 15:40</td></tr>
+                <tr><td>📄 讲稿-图论.pptx</td><td>4.2 MB</td><td>09-28 11:26</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ul class="tour-points">
+            <li><b>上传</b>分片 + 断点续传，大文件不怕刷新</li>
+            <li><b>分享</b>链接可设密码与过期时间</li>
+            <li><b>安全</b>下载走 PHP 代理，真实路径不暴露</li>
+          </ul>
+        </article>
+
+      </div>
+    </div>
+
+    <!-- ============ 说明区 ============ -->
+    <section class="os-info">
+      <article class="os-info-card panel reveal">
+        <h2>与真实版本的区别</h2>
+        <p>真实版本是跑在社团服务器上的 PHP 应用，数据存在 JSON 文件里。这里是<b>界面示意导览</b>——布局仿照真实页面重画，数据是编的，点不了。</p>
+      </article>
+      <article class="os-info-card panel reveal">
+        <h2>为什么网页里不能真跑</h2>
+        <p>GitHub Pages 只托管静态文件，没有 PHP 运行时，也不能连数据库。要真跑需要一台 PHP 服务器——社团的那台就是了。</p>
+      </article>
+      <article class="os-info-card panel reveal">
+        <h2>技术栈</h2>
+        <p>PHP 5.6+ · JSON 文件存储 · Bootstrap UI · GD 图像处理 · session 会话。代码由 AI 生成，我负责需求与维护。</p>
+      </article>
+    </section>
+
+  </main>
+
+  <!-- ============ 页脚 ============ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-logo">pen-pig:~$</span>
+      <span class="footer-note">© 2026 pen-pig — 用好奇心与 AI 造东西</span>
+      <a class="footer-top" href="site-demo.html#top">回到顶部<i aria-hidden="true">↑</i></a>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/tour-demo.js" defer></script>
+</body>
+</html>

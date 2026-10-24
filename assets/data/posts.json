@@ -1,0 +1,32 @@
+{
+  "posts": [
+    {
+      "id": "2026-10-23-blog-online",
+      "title": "博客上线了",
+      "date": "2026-10-23",
+      "tags": ["建站", "blog"],
+      "body": "## 为什么有这个博客\n\n项目卡片能放的信息有限，踩坑过程、设计取舍都值得单独记下来。第一篇先写博客本身是怎么工作的。\n\n## 查看\n\n所有访客都能看：左边是文章列表，点开就在右边读。支持 `markdown` 语法和站内搜索。\n\n## 发布\n\n发帖需要密码——点「解锁编辑」进入编辑模式，可以新建、修改、删除文章。\n\n纯静态站点没有服务端，所以：\n\n- 密码只防无意访问，改不了「刻意破解」——它就是个方便锁，不是保险箱\n- 新文章先存在**这台浏览器**里，导出 `posts.json` 提交到仓库并推送后，所有访客才看得到\n\n导出按钮在编辑模式的工具栏里，README 里写了完整流程。\n\n## 待办\n\n- 如果想要「任何人发布、即时可见」，需要接一个后端（云数据库），到时候再升级\n- 评论区暂时用 GitHub Discussions 的方案顶着"
+    },
+    {
+      "id": "2026-10-19-os-in-browser",
+      "title": "把操作系统搬进浏览器",
+      "date": "2026-10-19",
+      "tags": ["CeruliaOS", "v86", "WebAssembly"],
+      "body": "## 起因\n\nCeruliaOS 一直跑在 VMware 和 QEMU 里。有一天我想：能不能让点开主页的人**直接看到它启动**？\n\n答案是能——用 v86，一个编译成 WebAssembly 的 x86 模拟器。这篇记录整个过程中踩过的坑。\n\n## 第一个坑：BIOS 不在了\n\n一开始 `new V86(...)` 构造成功、状态全是 running，但屏幕上什么都没有，内存里连引导扇区的影子都没有。\n\n查了一圈官方测试代码才发现：**这一版 v86.wasm 不内置 BIOS**，必须自己传：\n\n- `bios: { url: \"seabios.bin\" }`\n- `vga_bios: { url: \"vgabios.bin\" }`\n\n没有 BIOS，CPU 从复位向量开始执行一片全零内存，安静地「装死」。\n\n## 第二个坑：multiboot 镜像的格式\n\n为了绕过磁盘直接加载内核，我先写了个 multiboot 测试内核——还是没输出。\n\n翻源码发现：v86 的 multiboot **只认 ELF 或带 ADDRESS 头的镜像**（flags 的 bit16）。我的内核只有 magic + flags=3，entrypoint 被静默算成 0——而 release 构建里断言是 no-op，连个报错都不给。\n\n## 第三个坑：别信内存读回\n\n调试时我通过 `wasm_memory.buffer` 读虚拟机内存，全是零，一度以为 CPU 根本没跑。\n\n实际上那个 buffer 引用可能是失效的，读回来没有意义。后来改成以屏幕渲染为准，一眼看出内核早就跑起来了。\n\n## 现在的效果\n\n点开 [os.html](/os.html)，点启动，完整的 **BIOS → MBR → boot sector → stage2 → kernel** 引导链就在浏览器里跑，最后停在 CeruliaOS 的 shell。\n\n镜像就是本地构建用的同一个文件，只是换了个「硬件」。没有任何录屏成分。\n\n## 已知限制\n\n- 镜像没带数据分区，文件相关命令暂不可用\n- 模拟器里 FPU selftest 有两项假阴性（v86 的保留位填法和真机不一样，不是内核的错）"
+    },
+    {
+      "id": "2026-10-10-clawler",
+      "title": "gdgzoi-clawler：给学校 OJ 写个爬虫",
+      "date": "2026-10-10",
+      "tags": ["gdgzoi-clawler", "C++", "爬虫"],
+      "body": "## 为什么做\n\n学校 OJ（GDGZOI）的榜单一页只显示一小截，想知道「某人这学期做了多少题」要翻很久。爬虫把数据抓下来整理好，查询就快了。\n\n## 它做什么\n\n- 抓取比赛榜单，生成可排序的总表\n- 汇总每个用户的提交记录\n- 导出 CSV / JSON，方便丢进表格软件\n\nC++ 编写。代码由 AI 生成，我负责需求、设计和验证。\n\n## 在网页里试用\n\n原版跑在本机或服务器上，浏览器里因为同源策略碰不到 OJ。所以在 [演示页](/clawler.html) 里做了个交互版：命令、输出、交互方式都和真的一样，数据是预置样例。\n\n试试这几条：\n\n- `help` — 看看有哪些命令\n- `rank` — 比赛榜单\n- `submissions --recent 5` — 最近提交\n- `export csv` — 真的会下载一份 CSV\n\n## 踩坑记录\n\n- OJ 有简单的频率限制，抓取要加间隔，不然会被临时封 IP\n- 榜单页的结构改过一次，选择器写死会脆，后来按 table 的列数动态解析\n- 编码是 GBK 转 UTF-8 的活儿，漏了这步中文全是乱码"
+    },
+    {
+      "id": "2026-10-05-site-itself",
+      "title": "这个网站本身",
+      "date": "2026-10-05",
+      "tags": ["建站", "GitHub Pages"],
+      "body": "## 零依赖\n\n没有 CDN、没有框架、没有统计脚本。字体子集化后自托管（6 个 woff2，共约 190KB），图标全是内联 SVG。\n\n代价是每次改文案都要重新子集化字体——漏一个汉字，那个字就会变方框。这个坑我已经踩过一次了。\n\n## 终端美学\n\n深色控制台风：磷光绿 + 琥珀，JetBrains Mono + Noto Sans SC。动效只改 `transform` 和 `opacity`，并且全部尊重 `prefers-reduced-motion`；关掉 JS 页面内容依然完整。\n\n## 结构\n\n- `index.html` — 单页：关于 / 项目 / 竞赛 / 联系\n- `os.html` — 浏览器里跑 CeruliaOS\n- `blog.html` — 你现在看的这个\n- `clawler.html` — 爬虫交互演示\n- `site-demo.html` — 社团网站的模块导览\n\n## 部署\n\nGitHub Pages + Actions 自动构建，`main` 分支推上去即上线。本机 HTTPS 到 github.com 不通，改走 SSH 推送。\n\n## 博客怎么工作\n\n文章存在 `assets/data/posts.json`，发帖要密码。新文章先存在本地浏览器，导出 JSON、提交仓库、推送后所有访才看得到——纯静态站点的「半自动发布」，README 里有完整流程。"
+    }
+  ]
+}

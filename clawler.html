@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>在浏览器里试用 gdgzoi-clawler · pen-pig</title>
+  <meta name="description" content="gdgzoi-clawler 交互演示：命令、输出、导出格式与真实爬虫一致，数据为预置样例。">
+  <meta property="og:title" content="试用 gdgzoi-clawler">
+  <meta property="og:description" content="学校 OJ 爬虫的网页交互演示。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pen-pig.github.io/clawler.html">
+  <meta name="theme-color" content="#06080c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306080c'/%3E%3Cpath d='M18 20l16 12-16 12' stroke='%2346f3a7' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+  <!-- 氛围层：扫描线 / 噪点 / 光标辉光 -->
+  <div class="fx fx-scan" aria-hidden="true"></div>
+  <div class="fx fx-noise" aria-hidden="true"></div>
+  <div class="fx fx-cursor" id="cursorGlow" aria-hidden="true"></div>
+
+  <!-- ============ 导航 ============ -->
+  <header class="nav" id="top">
+    <a class="nav-logo" href="index.html" aria-label="返回主页">
+      <span class="nav-user">pen-pig@home</span><span class="nav-colon">:</span><span class="nav-path">~</span><span class="nav-dollar">$</span>
+    </a>
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="index.html#about"><i>01</i>关于</a>
+      <a href="index.html#projects"><i>02</i>项目</a>
+      <a href="index.html#oi"><i>03</i>竞赛</a>
+      <a href="index.html#contact"><i>04</i>联系</a>
+      <a href="blog.html"><i>05</i>博客</a>
+    </nav>
+    <span class="nav-status"><i class="pulse-dot" aria-hidden="true"></i>ONLINE</span>
+  </header>
+
+  <main class="clawler-page">
+
+    <!-- ============ 标题区 ============ -->
+    <section class="clawler-head">
+      <a class="os-back" href="index.html#projects">← 返回项目区</a>
+      <p class="tape"><span>INTERACTIVE DEMO</span><span class="tape-dim">// SIMULATED TERMINAL</span></p>
+      <h1 class="os-title">在浏览器里试用 <em>gdgzoi-clawler</em></h1>
+      <p class="os-sub">学校 OJ（GDGZOI）数据爬虫的<b>交互演示</b>：命令、输出格式、导出文件和真实版本一致。浏览器因为同源策略碰不到 OJ，所以这里用的是预置样例数据——先输入 <code>help</code> 看看。</p>
+    </section>
+
+    <!-- ============ 终端舞台 ============ -->
+    <section class="clawler-stage panel">
+      <span class="hud hud-tl" aria-hidden="true">CRAWLER // DEMO</span>
+      <span class="hud hud-tr" aria-hidden="true">DATA: SAMPLE</span>
+
+      <div class="term clawler-term">
+        <div class="term-bar">
+          <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="term-title">pen-pig: ~/gdgzoi-clawler</span>
+          <span class="term-size">↑↓ 历史 · Tab 补全</span>
+        </div>
+        <div class="term-body clawler-out" id="termOut" aria-live="polite"></div>
+        <form class="clawler-input-row" id="termForm" autocomplete="off">
+          <span class="clawler-prompt">pen-pig@gdgzoi:~$</span>
+          <input class="clawler-input" id="termInput" type="text" placeholder="输入 help 回车开始" aria-label="命令输入" autocomplete="off" spellcheck="false">
+        </form>
+      </div>
+
+      <!-- 快捷命令条 -->
+      <div class="clawler-quick">
+        <span class="clawler-quick-label">QUICK:</span>
+        <button class="clawler-chip" type="button" data-cmd="help">help</button>
+        <button class="clawler-chip" type="button" data-cmd="rank">rank</button>
+        <button class="clawler-chip" type="button" data-cmd="submissions --recent 5">submissions --recent 5</button>
+        <button class="clawler-chip" type="button" data-cmd="search pen-pig">search pen-pig</button>
+        <button class="clawler-chip" type="button" data-cmd="stats">stats</button>
+        <button class="clawler-chip" type="button" data-cmd="export csv">export csv</button>
+        <button class="clawler-chip" type="button" data-cmd="about">about</button>
+      </div>
+    </section>
+
+    <!-- ============ 说明区 ============ -->
+    <section class="os-info">
+      <article class="os-info-card panel reveal">
+        <h2>这个爬虫做什么</h2>
+        <p>抓取 GDGZOI（学校 OJ）的比赛榜单和提交记录，整理成可排序的总表，支持 CSV / JSON 导出。C++ 编写，代码由 AI 生成，我负责需求、设计与验证。</p>
+      </article>
+      <article class="os-info-card panel reveal">
+        <h2>演示和真版的区别</h2>
+        <p>命令、输出排版、导出格式完全一致；区别只有数据——这里是预置样例，真版抓的是 OJ 实时页面。</p>
+        <p><code>export csv</code> 会真的下载一份文件，可以打开看看格式。</p>
+      </article>
+      <article class="os-info-card panel reveal">
+        <h2>为什么网页里不能真抓</h2>
+        <p>浏览器的同源策略不允许网页直接读 OJ 的页面；真版需要跑在本机或服务器上，定时抓取后落库。</p>
+        <p>想要真数据版？那需要一台常开的机器——以后可以考虑。</p>
+      </article>
+    </section>
+
+  </main>
+
+  <!-- ============ 页脚 ============ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-logo">pen-pig:~$</span>
+      <span class="footer-note">© 2026 pen-pig — 用好奇心与 AI 造东西</span>
+      <a class="footer-top" href="clawler.html#top">回到顶部<i aria-hidden="true">↑</i></a>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/clawler-demo.js" defer></script>
+</body>
+</html>

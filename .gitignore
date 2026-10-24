@@ -1,1 +1,13 @@
+# WorkBuddy 工作数据（不提交）
 .workbuddy/
+
+# 平台发布标记文件（不提交）
+*.genie
+
+# 评论网关运行时数据
+gateway/data/
+gateway/*.tmp
+
+# 本地密钥（如需放 GitHub token / Turnstile secret）
+gateway/.env
+gateway/secrets.json

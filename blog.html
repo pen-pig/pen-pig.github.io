@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>博客 · pen-pig</title>
+  <meta name="description" content="pen-pig 的博客：踩坑记录、项目笔记。查看公开，发布需要密码。">
+  <meta property="og:title" content="博客 · pen-pig">
+  <meta property="og:description" content="踩坑记录、项目笔记。查看公开，发布需要密码。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pen-pig.github.io/blog.html">
+  <meta name="theme-color" content="#06080c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306080c'/%3E%3Cpath d='M18 20l16 12-16 12' stroke='%2346f3a7' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+  <!-- 氛围层：扫描线 / 噪点 / 光标辉光 -->
+  <div class="fx fx-scan" aria-hidden="true"></div>
+  <div class="fx fx-noise" aria-hidden="true"></div>
+  <div class="fx fx-cursor" id="cursorGlow" aria-hidden="true"></div>
+
+  <!-- ============ 导航 ============ -->
+  <header class="nav" id="top">
+    <a class="nav-logo" href="index.html" aria-label="返回主页">
+      <span class="nav-user">pen-pig@home</span><span class="nav-colon">:</span><span class="nav-path">~</span><span class="nav-dollar">$</span>
+    </a>
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="index.html#about"><i>01</i>关于</a>
+      <a href="index.html#projects"><i>02</i>项目</a>
+      <a href="index.html#oi"><i>03</i>竞赛</a>
+      <a href="index.html#contact"><i>04</i>联系</a>
+      <a href="blog.html"><i>05</i>博客</a>
+    </nav>
+    <span class="nav-status"><i class="pulse-dot" aria-hidden="true"></i>ONLINE</span>
+  </header>
+
+  <main class="blog-page">
+
+    <!-- ============ 标题区 ============ -->
+    <section class="blog-head">
+      <a class="os-back" href="index.html">← 返回主页</a>
+      <p class="tape"><span>BLOG</span><span class="tape-dim">// NOTES &amp; LOGS</span></p>
+      <h1 class="os-title">博客</h1>
+      <p class="os-sub">踩坑记录、项目笔记与折腾日常。<b>查看完全公开</b>；发布需要密码——纯静态站点没有服务端，新文章会先存在这台浏览器里，导出 <code>posts.json</code> 推送后大家才看得到。</p>
+    </section>
+
+    <!-- ============ 工具条 ============ -->
+    <div class="blog-toolbar panel">
+      <span class="blog-count" id="blogCount">加载中…</span>
+      <div class="blog-toolbar-right">
+        <input class="blog-search" id="blogSearch" type="search" placeholder="搜索标题 / 标签 / 正文…" aria-label="搜索文章">
+        <button class="btn btn-ghost" id="btnUnlock" type="button">🔓 解锁编辑</button>
+        <span class="blog-edit-tools" id="editTools" hidden>
+          <button class="btn btn-primary" id="btnNew" type="button">＋ 新建文章</button>
+          <button class="btn btn-ghost" id="btnExport" type="button">⬇ 导出 posts.json</button>
+        </span>
+      </div>
+    </div>
+
+    <p class="blog-edit-banner" id="editBanner" hidden>
+      编辑模式已解锁——改动只保存在<b>这台浏览器</b>（localStorage）。导出 <code>posts.json</code> 替换仓库里的 <code>assets/data/posts.json</code> 并推送，所有访客才能看到。点「锁定编辑」退出。
+    </p>
+
+    <!-- ============ 主体：列表 + 阅读区 ============ -->
+    <div class="blog-layout">
+      <aside class="blog-list panel" id="blogList" aria-label="文章列表">
+        <p class="blog-empty">加载中…</p>
+      </aside>
+      <article class="blog-reader panel" id="blogReader" aria-live="polite">
+        <div class="blog-reader-empty"><p>加载中…</p></div>
+      </article>
+    </div>
+
+  <!-- ============ 评论区 ============ -->
+  <section class="comment-section panel" id="commentSection" aria-label="评论区">
+    <div class="comment-head">
+      <h2 class="comment-title">评论</h2>
+      <span class="comment-count" id="cmtCount">加载中…</span>
+    </div>
+
+    <div class="comment-list" id="cmtList">
+      <p class="cmt-empty">加载中…</p>
+    </div>
+
+    <form class="comment-form" id="cmtForm" onsubmit="return false;">
+      <div class="comment-row">
+        <label class="comment-field">
+          <span>昵称（可留空）</span>
+          <input class="comment-input" id="cmtNick" type="text" maxlength="24" placeholder="匿名" autocomplete="nickname">
+        </label>
+        <label class="comment-field comment-field-captcha" id="cmtLocalCaptcha">
+          <span>验证码</span>
+          <span class="captcha-row">
+            <img class="captcha-img" id="cmtCaptcha" alt="点击刷新验证码" title="点击刷新" width="186" height="70">
+            <input class="comment-input comment-input-answer" id="cmtAnswer" type="text" inputmode="numeric" maxlength="4" placeholder="答案" autocomplete="off">
+            <button class="btn btn-ghost comment-refresh" id="cmtReload" type="button" title="换一张" aria-label="换一张验证码"><span class="refresh-icon" aria-hidden="true"></span></button>
+          </span>
+        </label>
+        <div class="comment-field comment-field-turnstile" id="cmtTurnstile" hidden>
+          <span class="comment-field-label">人机验证</span>
+          <div class="turnstile-host"></div>
+        </div>
+      </div>      <label class="comment-field">
+        <span>评论内容</span>
+        <textarea class="comment-input comment-textarea" id="cmtBody" rows="3" maxlength="1000" placeholder="说点什么…"></textarea>
+      </label>
+      <div class="comment-ops">
+        <button class="btn btn-primary" id="cmtSubmit" type="button">发布评论</button>
+        <span class="cmt-status" id="cmtStatus"></span>
+        <span class="cmt-hint">匿名即可发言 · 同一 IP 10 秒内限 2 次 · 需通过人机验证</span>
+      </div>
+    </form>
+  </section>
+
+  <noscript>
+    <p class="blog-noscript">这个页面需要 JavaScript 才能加载文章列表——文章数据在 <code>assets/data/posts.json</code>，也可以直接去仓库里看。</p>
+  </noscript>
+
+  </main>
+
+  <!-- ============ 密码模态 ============ -->
+  <div class="modal" id="pwModal" hidden>
+    <div class="modal-card panel">
+      <h2 class="modal-title">解锁编辑模式</h2>
+      <p class="modal-sub">输入发布密码。纯前端密码只防无意访问，防不了刻意破解——图个方便。</p>
+      <input class="modal-input" id="pwInput" type="password" placeholder="发布密码" autocomplete="off">
+      <p class="modal-error" id="pwError" hidden>密码不对，再试试。</p>
+      <div class="modal-ops">
+        <button class="btn btn-ghost" id="pwCancel" type="button">取消</button>
+        <button class="btn btn-primary" id="pwConfirm" type="button">解锁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 编辑器模态 ============ -->
+  <div class="modal modal-wide" id="editorModal" hidden>
+    <div class="modal-card panel">
+      <h2 class="modal-title" id="edHeading">新建文章</h2>
+      <p class="modal-sub">正文支持 markdown：<code># 标题</code>、<code>**粗体**</code>、<code>- 列表</code>、<code>`代码`</code>、``` 代码块 ```、<code>&gt; 引用</code>、<code>[链接](url)</code>。</p>
+      <label class="modal-field">标题
+        <input class="modal-input" id="edTitle" type="text" placeholder="文章标题" maxlength="80">
+      </label>
+      <div class="modal-row">
+        <label class="modal-field">日期
+          <input class="modal-input" id="edDate" type="date">
+        </label>
+        <label class="modal-field">标签（逗号分隔）
+          <input class="modal-input" id="edTags" type="text" placeholder="CeruliaOS, 踩坑">
+        </label>
+      </div>
+      <label class="modal-field">正文
+        <textarea class="modal-input modal-textarea" id="edBody" rows="12" placeholder="开始写……"></textarea>
+      </label>
+      <div class="modal-ops">
+        <button class="btn btn-ghost" id="edCancel" type="button">取消</button>
+        <button class="btn btn-primary" id="edSave" type="button">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 页脚 ============ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-logo">pen-pig:~$</span>
+      <span class="footer-note">© 2026 pen-pig — 用好奇心与 AI 造东西</span>
+      <a class="footer-top" href="blog.html#top">回到顶部<i aria-hidden="true">↑</i></a>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/comments.js" defer></script>
+  <script src="assets/js/blog.js" defer></script>
+</body>
+</html>
