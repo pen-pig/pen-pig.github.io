@@ -84,6 +84,10 @@
     </div>
 
     <form class="comment-form" id="cmtForm" onsubmit="return false;">
+      <div class="cmt-replybar" id="cmtReplyBar" hidden>
+        <span class="cmt-replybar-text" id="cmtReplyText">正在回复</span>
+        <button class="cmt-op" type="button" id="cmtReplyCancel">取消回复</button>
+      </div>
       <div class="comment-row">
         <label class="comment-field">
           <span>昵称（可留空）</span>
@@ -105,12 +109,26 @@
         <span>评论内容</span>
         <textarea class="comment-input comment-textarea" id="cmtBody" rows="3" maxlength="1000" placeholder="说点什么…"></textarea>
       </label>
+      <div class="cmt-imagerow">
+        <label class="cmt-imagelabel">
+          <span class="cmt-attach" aria-hidden="true">＋</span>
+          <span>配图（可选，jpg / png / gif / webp，≤2MB）</span>
+          <input class="cmt-file" id="cmtImage" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
+        </label>
+        <span class="cmt-preview" id="cmtImagePreview" hidden>
+          <img class="cmt-preview-img" id="cmtImagePreviewImg" alt="待上传配图预览">
+          <span class="cmt-preview-name" id="cmtImagePreviewName"></span>
+          <button class="cmt-op" type="button" id="cmtImageClear">移除</button>
+        </span>
+      </div>
       <div class="comment-ops">
         <button class="btn btn-primary" id="cmtSubmit" type="button">发布评论</button>
         <span class="cmt-status" id="cmtStatus"></span>
-        <span class="cmt-hint">匿名即可发言 · 同一 IP 10 秒内限 2 次 · 需通过人机验证</span>
+        <span class="cmt-hint">匿名即可发言 · 可回复某楼 · 同一 IP 10 秒内限 2 次 · 需通过人机验证</span>
       </div>
     </form>
+
+    <div class="cmt-keybox" id="cmtKeyBox" hidden></div>
   </section>
 
   <noscript>

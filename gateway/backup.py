@@ -20,10 +20,13 @@ import os
 import sys
 import urllib.request
 import urllib.error
+from urllib.parse import quote
 
 BASE = "https://pen-pig-comment-gateway.app.workbuddy.host"
 CODE = "OBVHYSCDUX"
-LOCAL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "comments.json")
+HERE = os.path.dirname(os.path.abspath(__file__))
+LOCAL = os.path.join(HERE, "data", "comments.json")
+UPLOAD_DIR = os.path.join(HERE, "data", "uploads")
 
 
 def get(path):
@@ -33,6 +36,13 @@ def get(path):
         return json.loads(resp.read().decode("utf-8"))
 
 
+def fetch_image(name):
+    """下载一张配图，存到本地 data/uploads/"""
+    url = f"{BASE}/api/image?file={quote(name)}&sharecode={CODE}"
+    with urllib.request.urlopen(url, timeout=30) as resp:
+        return resp.read()
+
+
 def pull():
     data = get("/api/comments/export")
     comments = data.get("comments", [])
@@ -40,6 +50,20 @@ def pull():
     with open(LOCAL, "w", encoding="utf-8") as f:
         json.dump(comments, f, ensure_ascii=False, indent=2)
     print(f"已拉取 {len(comments)} 条评论 -> {LOCAL}")
+
+    images = data.get("images", [])
+    if images:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        got = 0
+        for name in images:
+            try:
+                blob = fetch_image(name)
+                with open(os.path.join(UPLOAD_DIR, name), "wb") as f:
+                    f.write(blob)
+                got += 1
+            except Exception as e:
+                print(f"  [warn] 配图拉取失败 {name}: {e}")
+        print(f"已拉取 {got}/{len(images)} 张配图 -> {UPLOAD_DIR}")
     return comments
 
 

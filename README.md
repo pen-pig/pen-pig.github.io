@@ -77,9 +77,23 @@ cp os-image.bin <本站>/assets/os/cerulia.img
 
 **设计取舍**：不接云服务数据库、不用 GitHub Issues、不需要任何 token 或密钥。评论存在网关自己的 `data/comments.json` 里，落盘用「临时文件 + rename」保证原子性。
 
+### 讨论区模型（楼号 · 楼中楼 · 配图 · 删自己的评论）
+
+评论区不是「一串留言」，而是一块讨论区，交互模型参考社团网站的讨论区：
+
+| 能力 | 说明 |
+| --- | --- |
+| 楼号 | 每条评论一个 `#N 楼`，由服务端在创建时按本文顺序固定，**删掉别的评论也不会让楼号漂移** |
+| 楼中楼 | 点「回复」进入回复态，回复挂在目标楼下面缩进显示，可取消 |
+| 头像 | 昵称首字圆头像，颜色按昵称哈希固定（同一昵称同一颜色） |
+| 配图 | 单张 jpg / png / gif / webp，≤2MB。服务端按**魔数**校验真实类型（不信 MIME 头），落盘到 `data/uploads/` |
+| 删自己的评论 | 匿名没有账号体系，所以用「**删除码**」代替密码：提交时服务端随机生成明文**只回给提交者一次**，库里只留 SHA-256 哈希，之后凭删除码删掉自己那条 |
+
+配图文件名走严格白名单正则（`img_<16位hex>.<ext>`）+ `realpath` 校验，路径穿越直接 400。
+
 ### 三个关键实现细节
 
-1. **限流必须在服务端做。** 纯前端的 localStorage 限流形同虚场。规则是同 IP 10 秒最多 2 次，另有每小时 20 次兜底。
+1. **限流必须在服务端做。** 纯前端的 localStorage 限流形同虚场。规则是同 IP 10 秒最多 2 次，另有每小时 20 次兜底（阈值可用 `RATE_WINDOW_MAX` / `RATE_HOUR_MAX` 覆盖，方便联调）。
 2. **限流表和验证码答案都要落盘。** 线上是多副本负载均衡，内存里的 Map 各副本互不可见——放在内存里等于没限流。读改写用同步 IO，避免两个请求读到同一份旧表后互相覆盖。
 3. **客户端自带 captcha id。** 图片 URL 里带上 id，服务端按这个 id 存答案，保证「看到的图」和「提交的 id」是同一张验证码。
 
@@ -107,6 +121,8 @@ node server.js          # 读 PORT 环境变量，默认 8787
 PORT=8787
 TURNSTILE_SITE_KEY=...   # Cloudflare 控制台创建 Turnstile widget 得到
 TURNSTILE_SECRET_KEY=...
+RATE_WINDOW_MAX=2        # 限流：10 秒内最多几次
+RATE_HOUR_MAX=20         # 限流：每小时最多几次
 ```
 
 部署时前端要拿到网关地址和访问码，改 `assets/js/comments.js` 顶部：
@@ -121,11 +137,13 @@ var GATEWAY = "https://pen-pig-comment-gateway.app.workbuddy.host";
 **重新部署网关会覆盖线上的 `data/` 目录**，也就是「重新部署 = 清空线上评论」。所以每次重新部署前先拉一份回来：
 
 ```bash
-python gateway/backup.py pull    # 线上 -> 本地 data/comments.json
+python gateway/backup.py pull    # 线上 -> 本地 data/comments.json + data/uploads/ 配图
 # ... 重新部署 ...
 ```
 
 `python gateway/backup.py show` 可以同时看线上和本地各有多少条。
+
+> 备份只存公开字段，删除码的哈希不进备份——**重新部署后旧评论的删除码失效**（旧评论没有删除码机制，本来也无法自助删除）。
 
 ### 接口
 
@@ -134,8 +152,10 @@ python gateway/backup.py pull    # 线上 -> 本地 data/comments.json
 | GET | `/api/health` | 健康检查 + 当前评论数 + 验证码模式 |
 | GET | `/api/captcha` | 签发验证码（本地模式返回 PNG + `X-Captcha-Id` 头） |
 | GET | `/api/comments?post=<id>` | 读取某篇文章的评论 |
-| GET | `/api/comments/export` | 全量导出（备份用） |
-| POST | `/api/comments` | 提交评论 |
+| GET | `/api/comments/export` | 全量导出（备份用，含配图文件清单） |
+| GET | `/api/image?file=<name>` | 读取评论配图 |
+| POST | `/api/comments` | 提交评论（支持 `replyTo` 回复某楼、`image` 配图；返回一次性 `delKey`） |
+| POST | `/api/comments/delete` | 用删除码删掉自己那条（`{id, delKey}`） |
 
 ## 本地预览
 

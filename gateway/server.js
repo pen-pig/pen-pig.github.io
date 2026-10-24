@@ -29,14 +29,16 @@ const https = require("https");
 const PORT = process.env.PORT || 8787;
 const DATA_FILE = path.join(__dirname, "data", "comments.json");
 const RATE_FILE = path.join(__dirname, "data", "ratelimit.json");
+const UPLOAD_DIR = path.join(__dirname, "data", "uploads");
 // 实例标识：线上是多副本负载均衡，用来确认请求落到了哪个副本
 const INSTANCE_ID = require("crypto").randomBytes(3).toString("hex");
 
 // 限流：10 秒 2 次；另加每小时 20 次的兜底，防止慢速刷屏
-const WINDOW_MS = 10 * 1000;
-const WINDOW_MAX = 2;
-const HOUR_MS = 60 * 60 * 1000;
-const HOUR_MAX = 20;
+// 阈值可用环境变量覆盖（本地联调 / 压测时放开）
+const WINDOW_MS = parseInt(process.env.RATE_WINDOW_MS || String(10 * 1000), 10);
+const WINDOW_MAX = parseInt(process.env.RATE_WINDOW_MAX || "2", 10);
+const HOUR_MS = parseInt(process.env.RATE_HOUR_MS || String(60 * 60 * 1000), 10);
+const HOUR_MAX = parseInt(process.env.RATE_HOUR_MAX || "20", 10);
 
 const CAPTCHA_TTL_MS = 5 * 60 * 1000;
 
@@ -48,6 +50,16 @@ const TURNSTILE_SECRET_KEY = (process.env.TURNSTILE_SECRET_KEY || "").trim();
 const USE_TURNSTILE = !!(TURNSTILE_SITE_KEY && TURNSTILE_SECRET_KEY);
 const MAX_CONTENT = 1000;
 const MAX_NICK = 24;
+
+// 讨论区配图：允许的类型与上限（对应社团的讨论区：jpg/png/gif/webp）
+const IMAGE_TYPES = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/gif": "gif",
+  "image/webp": "webp"
+};
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;   // 单张 2MB
+const IMAGE_NAME_RE = /^img_[0-9a-f]{16}\.(jpg|png|gif|webp)$/;
 
 /* ---------------- 工具 ---------------- */
 
@@ -86,6 +98,80 @@ function clean(s, max) {
     out += str.charAt(i);
   }
   return out.trim().slice(0, max);
+}
+
+/* ---------------- 讨论区扩展：配图 / 删除码 ----------------
+   博客评论区按「社团讨论区」的模型扩展：楼号、回复某楼、配图、删自己的评论。
+   匿名没有账号体系，所以用「删除码」代替密码：
+   发评论时服务端随机生成一段明文只回给提交者一次，库里只留哈希，
+   之后凭删除码就能删掉自己那条。
+------------------------------------------------ */
+
+function sha256hex(s) {
+  return require("crypto").createHash("sha256").update(String(s)).digest("hex");
+}
+
+// 对外输出时抹掉删除码哈希等内部字段
+function publicComment(c) {
+  return {
+    id: c.id,
+    post: c.post,
+    nickname: c.nickname || "匿名",
+    content: c.content || "",
+    created_at: c.created_at,
+    floor: typeof c.floor === "number" ? c.floor : 0,
+    replyTo: typeof c.replyTo === "number" ? c.replyTo : 0,
+    replyToNick: c.replyToNick || "",
+    image: c.image || ""
+  };
+}
+
+// 解析并落盘一张配图：接收 data URL，返回存储文件名（失败返回空串）
+function saveImage(dataUrl) {
+  if (!dataUrl) return "";
+  var m = /^data:([a-z]+\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/i.exec(String(dataUrl));
+  if (!m) return "";
+  var mime = m[1].toLowerCase();
+  var ext = IMAGE_TYPES[mime];
+  if (!ext) return "";
+  var raw;
+  try {
+    raw = Buffer.from(m[2].replace(/\s+/g, ""), "base64");
+  } catch (e) { return ""; }
+  if (!raw.length || raw.length > MAX_IMAGE_BYTES) return "";
+  // 魔数校验：不能只信 MIME 头
+  var ok = false;
+  if (ext === "jpg") ok = raw[0] === 0xff && raw[1] === 0xd8 && raw[2] === 0xff;
+  else if (ext === "png") ok = raw[0] === 0x89 && raw[1] === 0x50 && raw[2] === 0x4e && raw[3] === 0x47;
+  else if (ext === "gif") ok = raw.slice(0, 3).toString("latin1") === "GIF";
+  else if (ext === "webp") ok = raw.slice(0, 4).toString("latin1") === "RIFF" && raw.slice(8, 12).toString("latin1") === "WEBP";
+  if (!ok) return "";
+  var name = "img_" + require("crypto").randomBytes(8).toString("hex") + "." + ext;
+  try {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    fs.writeFileSync(path.join(UPLOAD_DIR, name), raw);
+  } catch (e) { return ""; }
+  return name;
+}
+
+function removeImage(name) {
+  if (!name || !IMAGE_NAME_RE.test(name)) return;
+  try { fs.unlinkSync(path.join(UPLOAD_DIR, name)); } catch (e) {}
+}
+
+// 删掉一条评论：命中返回 true
+function deleteCommentById(id) {
+  var removed = null;
+  writeChain = writeChain.then(async () => {
+    var arr = localAll();
+    var rest = [];
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i] && arr[i].id === id) removed = arr[i];
+      else rest.push(arr[i]);
+    }
+    if (removed) writeFileAtomic(rest);
+  });
+  return writeChain.then(function () { return removed; });
 }
 
 /* ---------------- 图形验证码 ----------------
@@ -398,9 +484,18 @@ function addComment(comment) {
   // 串行执行：读 → 追加 → 写，避免并发请求读到同一份旧数组
   writeChain = writeChain.then(async () => {
     const arr = localAll();
+    // 楼号按「本文评论的创建顺序」固定下来：删掉前面的评论也不会让后面的楼号漂移
+    if (!comment.floor) {
+      let n = 0;
+      for (const c of arr) if (c && c.post === comment.post) n++;
+      comment.floor = n + 1;
+    }
     arr.push(comment);
-    // 只保留最近 2000 条，防止文件无限增长
-    while (arr.length > 2000) arr.shift();
+    // 只保留最近 2000 条，防止文件无限增长；顺手清掉被裁掉评论的配图
+    while (arr.length > 2000) {
+      const old = arr.shift();
+      if (old && old.image) removeImage(old.image);
+    }
     writeFileAtomic(arr);
   });
   return writeChain;
@@ -505,22 +600,52 @@ const server = http.createServer(async (req, res) => {
     try {
       const list = await listComments(post);
       list.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
-      json(res, 200, { comments: list, storage: "file" });
+      json(res, 200, { comments: list.map(publicComment), storage: "file" });
     } catch (e) {
       json(res, 500, { error: "读取评论失败：" + e.message });
     }
     return;
   }
 
-  // 全量导出（备份用）：post=* 返回所有文章的评论
+  // 全量导出（备份用）：post=* 返回所有文章的评论 + 配图清单
   if (path_ === "/api/comments/export" && req.method === "GET") {
     try {
       const list = localAll();
       list.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
-      json(res, 200, { comments: list, count: list.length, storage: "file" });
+      const images = [];
+      for (const c of list) {
+        if (c && c.image && images.indexOf(c.image) < 0) images.push(c.image);
+      }
+      json(res, 200, { comments: list.map(publicComment), count: list.length, images: images, storage: "file" });
     } catch (e) {
       json(res, 500, { error: "导出失败：" + e.message });
     }
+    return;
+  }
+
+  // 配图输出：文件名严格白名单 + 正则，杜绝路径穿越
+  if (path_ === "/api/image" && req.method === "GET") {
+    const f = clean(url.searchParams.get("file") || "", 64);
+    if (!IMAGE_NAME_RE.test(f)) {
+      json(res, 400, { error: "bad file" });
+      return;
+    }
+    let buf;
+    try {
+      buf = fs.readFileSync(path.join(UPLOAD_DIR, f));
+    } catch (e) {
+      json(res, 404, { error: "not found" });
+      return;
+    }
+    const ext = f.split(".").pop().toLowerCase();
+    const mime = ext === "jpg" ? "image/jpeg" : "image/" + ext;
+    res.writeHead(200, {
+      "Content-Type": mime,
+      "Content-Length": buf.length,
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Access-Control-Allow-Origin": "*"
+    });
+    res.end(buf);
     return;
   }
 
@@ -540,6 +665,10 @@ const server = http.createServer(async (req, res) => {
     const content = clean(payload.content || "", MAX_CONTENT);
     const captchaId = clean(payload.captchaId || "", 64);
     const captchaAnswer = clean(payload.captchaAnswer || "", 12);
+    // 回复某楼：楼号从 1 开始，0 表示顶层
+    let replyTo = parseInt(payload.replyTo, 10);
+    if (!isFinite(replyTo) || replyTo < 0) replyTo = 0;
+    const replyToNick = clean(payload.replyToNick || "", MAX_NICK);
 
     if (!post) { json(res, 400, { error: "缺少文章标识" }); return; }
     if (!content) { json(res, 400, { error: "评论内容不能为空" }); return; }
@@ -578,19 +707,71 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 配图：先落盘，评论保存失败要把图删掉，避免残留
+    const image = saveImage(payload.image || "");
+
+    // 删除码：明文只回给提交者一次，库里只留哈希
+    const delKey = require("crypto").randomBytes(6).toString("hex");
+
     const comment = {
       id: require("crypto").randomBytes(8).toString("hex"),
       post: post,
       nickname: nickname,
       content: content,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      replyTo: replyTo,
+      replyToNick: replyToNick,
+      image: image,
+      delKeyHash: sha256hex(delKey)
     };
     try {
       await addComment(comment);
-      json(res, 200, { ok: true, comment: comment, storage: "file" });
+      json(res, 200, {
+        ok: true,
+        comment: publicComment(comment),
+        delKey: delKey,
+        storage: "file"
+      });
     } catch (e) {
+      if (image) removeImage(image);
       json(res, 500, { error: "保存失败：" + e.message });
     }
+    return;
+  }
+
+  // 删除自己的评论：凭删除码（库里只存哈希）
+  if (path_ === "/api/comments/delete" && req.method === "POST") {
+    const ip = clientIp(req);
+    let payload;
+    try {
+      payload = JSON.parse(await readBody(req) || "{}");
+    } catch (e) {
+      json(res, 400, { error: "请求格式不对" });
+      return;
+    }
+    const cid = clean(payload.id || "", 32);
+    const key = clean(payload.delKey || "", 64);
+    if (!cid || !key) { json(res, 400, { error: "缺少评论标识或删除码" }); return; }
+
+    const rate = checkRate(ip);
+    if (!rate.ok) {
+      json(res, rate.code, { error: rate.msg, retryAfter: rate.wait }, { "Retry-After": String(rate.wait) });
+      return;
+    }
+
+    const all = localAll();
+    let target = null;
+    for (const c of all) {
+      if (c && c.id === cid) { target = c; break; }
+    }
+    if (!target) { json(res, 404, { error: "评论不存在或已被删除" }); return; }
+    if (!target.delKeyHash || target.delKeyHash !== sha256hex(key)) {
+      json(res, 403, { error: "删除码不对" });
+      return;
+    }
+    await deleteCommentById(cid);
+    if (target.image) removeImage(target.image);
+    json(res, 200, { ok: true, id: cid });
     return;
   }
 
