@@ -13,19 +13,27 @@
 | `blog.html` | 博客：文章公开可读，发布需密码 |
 | `clawler.html` | gdgzoi-clawler 的网页试用（终端交互演示） |
 | `site-demo.html` | PHP 项目（网站本体）的网页试用（7 模块导览） |
-| `gateway/` | 评论网关（Node 服务，只用标准库）：人机验证 + IP 限流 + 本地存储；`hashpass.js` 生成发布密码的哈希 |
+| `gateway/` | 网关（Node 服务，只用标准库）：人机验证 + IP 限流 + 本地存储 + 博客发布接口；`hashpass.js` 生成发布密码的哈希 |
 | `assets/css/style.css` | 视觉系统，设计令牌在文件顶部 `:root` |
 | `assets/js/main.js` | 动效：boot log 打字机、标题解码、滚动显现、数字滚动 |
 | `assets/js/os-demo.js` | os.html 的模拟器控制：镜像探测 / 下载进度 / 启动 / 重启 / 全屏 |
-| `assets/js/blog.js` | 博客页：文章渲染、迷你 Markdown、发布密码校验、评论区挂载 |
-| `assets/js/comments.js` | 评论区前端：验证码模式探测、提交、渲染、楼中楼回复、删除码 |
-| `assets/data/posts.json` | 文章基线数据（4 篇） |
+| `assets/js/blog.js` | 博客页：文章渲染、迷你 Markdown、发布密码校验、发布/删除、评论区挂载 |
+| `assets/js/comments.js` | 评论区前端：验证码、提交、渲染、楼中楼回复、删除码 |
+| `assets/data/posts.json` | 文章快照（网关不可用时的退路；线上正式内容在网关的 `data/posts.json`） |
 | `assets/fonts/` | JetBrains Mono + Noto Sans SC，按页面分组子集化 |
 | `assets/v86/` | v86 模拟器：`libv86.js` + `v86.wasm` + `bios/`（seabios / vgabios） |
 | `assets/os/cerulia.img` | CeruliaOS 磁盘镜像（约 0.8MB，来自 `tools/make_image.py` 的 `os-image.bin`） |
 | `.nojekyll` | 纯静态站点，跳过 Jekyll 处理 |
 
-## 博客发布密码
+## 博客发布
+
+文章正文存在网关自己的 `gateway/data/posts.json` 里，页面优先读网关；网关不可用时才回退到仓库里的 `assets/data/posts.json` 快照。
+
+发布流程：
+
+1. 点「解锁编辑」输入密码。浏览器按下面的算法算哈希、和 `assets/js/blog.js` 里存的值比对，同时把密码发给网关校验一次——网关也只存哈希，不存明文，校验通过就签一个临时令牌（2 小时）。
+2. 写完文章点「发布上线」，填一次人机验证（GD 风格的 4 位小写字符图）。网关校验令牌 + 验证码后写回文章库，所有访客立刻能看到。
+3. 「存草稿」只写在这台浏览器的 localStorage，不上线；删除文章同样要过验证码。
 
 密码**不以明文形式存在于任何源码里**。`assets/js/blog.js` 只存「盐 + 迭代次数 + 哈希」三件套，解锁时在浏览器里算哈希后比对：
 
@@ -44,9 +52,9 @@ Hi+1 = SHA256(Hi)      重复 iterations 次
 node gateway/hashpass.js "新密码"
 ```
 
-输出的 JSON 原样粘到 `assets/js/blog.js` 的 `BLOG_AUTH` 里，提交推送即可。脚本会打印自检结果（正确密码匹配、错误密码不匹配）。
+输出的 JSON 要贴到两处：`assets/js/blog.js` 的 `BLOG_AUTH`（浏览器本地比对）和 `gateway/server.js` 的 `PUBLISH_AUTH`（网关校验）。脚本会打印自检结果（正确密码匹配、错误密码不匹配）。
 
-> 这是前端校验：源码里没有明文密码，但改代码可以绕过。
+> 密码只在解锁时通过 HTTPS 发给网关一次；源码和网关配置里都只有哈希。
 
 ## 浏览器运行 CeruliaOS（os.html）
 
@@ -95,14 +103,13 @@ cp os-image.bin <本站>/assets/os/cerulia.img
 2. 限流表和验证码答案落盘。线上是多副本负载均衡，内存里的 Map 各副本互不可见。读改写用同步 IO，避免两个请求读到同一份旧表后互相覆盖。
 3. 验证码由客户端自带 id。图片 URL 里带上 id，服务端按这个 id 存答案，保证「看到的图」和「提交的 id」是同一张。
 
-### 人机验证：双引擎
+### 人机验证
 
-| 模式 | 条件 | 说明 |
-| --- | --- | --- |
-| Cloudflare Turnstile | 配置了 `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` | 服务端调 siteverify 校验，secret 不下发到前端 |
-| 自研 PNG 点阵验证码 | 未配置密钥时自动退回 | 5×7 点阵字模 + 干扰线 + 噪点，答案只存服务端 |
+GD 风格的字符验证码：4 位小写字符（字符表去掉容易看混的 0 o 1 l i），带干扰弧线和噪点，逐字符随机抖动和随机颜色。
 
-前端自动探测模式：`GET /api/captcha` 返回 `image/png` 就是本地模式，返回 JSON 就切到 Turnstile 挂件。
+- 图片由手写 PNG 编码器直接生成（字符用 5×7 点阵画出来，2 倍超采样后缩回，边缘平滑），网关只用 Node 标准库，不装 GD 也不装图形库。
+- 答案只存服务端；客户端自带 id 放进图片 URL，服务端按这个 id 存答案，保证「看到的图」和「提交的 id」是同一张。校验后立即作废。
+- 线上是多副本负载均衡，答案落盘（`data/captcha.json`），各副本共用。
 
 ### 部署与配置
 
@@ -113,17 +120,20 @@ cd gateway
 node server.js          # 读 PORT 环境变量，默认 8787
 ```
 
-环境变量（都不是必需，不配就退回本地验证码）：
+环境变量（都不是必需）：
 
 ```bash
 PORT=8787
-TURNSTILE_SITE_KEY=...   # Cloudflare 控制台创建 Turnstile widget 得到
-TURNSTILE_SECRET_KEY=...
-RATE_WINDOW_MAX=2        # 限流：10 秒内最多几次
-RATE_HOUR_MAX=20         # 限流：每小时最多几次
+RATE_WINDOW_MAX=2        # 评论限流：10 秒内最多几次
+RATE_HOUR_MAX=20         # 评论限流：每小时最多几次
+PUB_WINDOW_MAX=6         # 发布限流：10 秒内最多几次
+PUB_HOUR_MAX=60          # 发布限流：每小时最多几次
+BLOG_PW_SALT=...         # 发布密码参数（默认写死在 server.js 里）
+BLOG_PW_HASH=...
+BLOG_PW_ITERATIONS=10000
 ```
 
-部署时前端要拿到网关地址和访问码，改 `assets/js/comments.js` 顶部：
+部署时前端要拿到网关地址和访问码，改 `assets/js/comments.js` 和 `assets/js/blog.js` 顶部：
 
 ```js
 var SHARE_CODE = "OBVHYSCDUX";
@@ -132,7 +142,7 @@ var GATEWAY = "https://pen-pig-comment-gateway.app.workbuddy.host";
 
 ### 数据备份
 
-重新部署网关会覆盖线上的 `data/` 目录，也就是「重新部署 = 清空线上评论」。所以每次重新部署前先拉一份回来：
+重新部署网关会覆盖线上的 `data/` 目录，也就是「重新部署 = 清空线上评论和文章」。所以每次重新部署前先拉一份回来：
 
 ```bash
 python gateway/backup.py pull    # 线上 -> 本地 data/comments.json + data/uploads/ 配图
@@ -148,12 +158,16 @@ python gateway/backup.py pull    # 线上 -> 本地 data/comments.json + data/up
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET | `/api/health` | 健康检查 + 当前评论数 + 验证码模式 |
-| GET | `/api/captcha` | 签发验证码（本地模式返回 PNG + `X-Captcha-Id` 头） |
+| GET | `/api/captcha` | 签发验证码（返回 PNG + `X-Captcha-Id` 头） |
 | GET | `/api/comments?post=<id>` | 读取某篇文章的评论 |
 | GET | `/api/comments/export` | 全量导出（备份用，含配图文件清单） |
 | GET | `/api/image?file=<name>` | 读取评论配图 |
 | POST | `/api/comments` | 提交评论（支持 `replyTo` 回复某楼、`image` 配图；返回一次性 `delKey`） |
 | POST | `/api/comments/delete` | 用删除码删掉自己那条（`{id, delKey}`） |
+| GET | `/api/posts` | 读取文章列表 |
+| POST | `/api/publish/token` | 用发布密码换临时令牌（`{password}`） |
+| POST | `/api/posts` | 发布/覆盖一篇文章（`{token \| password, captchaId, captchaAnswer, post}`） |
+| POST | `/api/posts/delete` | 删掉一篇文章（`{token \| password, captchaId, captchaAnswer, id}`） |
 
 ## 本地预览
 

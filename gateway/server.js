@@ -42,12 +42,6 @@ const HOUR_MAX = parseInt(process.env.RATE_HOUR_MAX || "20", 10);
 
 const CAPTCHA_TTL_MS = 5 * 60 * 1000;
 
-// Cloudflare Turnstile: free tier, unlimited, no CF proxy required.
-// Configured -> use Turnstile; otherwise fall back to the local PNG captcha.
-// Either way the verdict is decided on the server only.
-const TURNSTILE_SITE_KEY = (process.env.TURNSTILE_SITE_KEY || "").trim();
-const TURNSTILE_SECRET_KEY = (process.env.TURNSTILE_SECRET_KEY || "").trim();
-const USE_TURNSTILE = !!(TURNSTILE_SITE_KEY && TURNSTILE_SECRET_KEY);
 const MAX_CONTENT = 1000;
 const MAX_NICK = 24;
 
@@ -175,10 +169,16 @@ function deleteCommentById(id) {
 }
 
 /* ---------------- 图形验证码 ----------------
-   纯手写 PNG 编码 + 5x7 点阵字模：
-   字符以像素点阵绘制（不是文字），图像里没有可解析的字符，
-   机器只能 OCR，纯前端方案做不到这一点。
+   参照社团网站的 GD 验证码：4 位小写字符 + 干扰弧线 + 噪点，
+   字符逐个随机抖动、随机颜色。答案只存在服务端，客户端拿到的就是一张图。
+
+   图是手写 PNG 编码器直接生成的（字符用 5x7 点阵画出来），
+   网关只用 Node 标准库，不装 GD 也不装任何图形库。
 ------------------------------------------------ */
+
+// 和 GD 版同一套字符表：去掉容易看混的 0 o 1 l i
+const CAPTCHA_CHARS = "abcdefghjkmnpqrstuvwxy23456789";
+const CAPTCHA_LEN = 4;
 
 const GLYPHS = {
   "0": [".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."],
@@ -191,11 +191,33 @@ const GLYPHS = {
   "7": ["#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."],
   "8": [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."],
   "9": [".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."],
-  "+": [".....", "..#..", "..#..", "#####", "..#..", "..#..", "....."],
-  "-": [".....", ".....", ".....", "#####", ".....", ".....", "....."],
-  "=": [".....", ".....", "#####", ".....", "#####", ".....", "....."],
-  "?": [".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."],
-  "x": [".....", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "....."]
+  "a": [".###.", "....#", ".####", "#...#", "#...#", "#...#", ".####"],
+  "b": ["#....", "#....", "####.", "#...#", "#...#", "#...#", "####."],
+  "c": [".###.", "#...#", "#....", "#....", "#....", "#...#", ".###."],
+  "d": ["....#", "....#", ".####", "#...#", "#...#", "#...#", ".####"],
+  "e": [".###.", "#...#", "#...#", "#####", "#....", "#...#", ".###."],
+  "f": ["..##.", ".#...", ".#...", "####.", ".#...", ".#...", ".#..."],
+  "g": [".####", "#...#", "#...#", "#...#", ".####", "....#", ".###."],
+  "h": ["#....", "#....", "####.", "#...#", "#...#", "#...#", "#...#"],
+  "i": ["..#..", ".....", ".##..", "..#..", "..#..", "..#..", ".###."],
+  "j": ["...#.", ".....", "..##.", "...#.", "...#.", "...#.", "#..#."],
+  "k": ["#....", "#....", "#..#.", "#.#..", "##...", "#.#..", "#..#."],
+  "l": [".##..", "..#..", "..#..", "..#..", "..#..", "..#..", ".###."],
+  "m": [".....", ".....", "##.#.", "#.#.#", "#.#.#", "#.#.#", "#...#"],
+  "n": [".....", ".....", "####.", "#...#", "#...#", "#...#", "#...#"],
+  "o": [".....", ".....", ".###.", "#...#", "#...#", "#...#", ".###."],
+  "p": [".....", ".....", "####.", "#...#", "#...#", "#...#", "####."],
+  "q": [".....", ".....", ".####", "#...#", "#...#", "#...#", ".####"],
+  "r": [".....", ".....", "#.##.", "##...", "#....", "#....", "#...."],
+  "s": [".....", ".....", ".####", "#....", ".###.", "....#", "####."],
+  "t": [".#...", ".#...", "####.", ".#...", ".#...", ".#..#", "..##."],
+  "u": [".....", ".....", "#...#", "#...#", "#...#", "#...#", ".####"],
+  "v": [".....", ".....", "#...#", "#...#", "#...#", ".#.#.", "..#.."],
+  "w": [".....", ".....", "#...#", "#...#", "#.#.#", "#.#.#", ".#.#."],
+  "x": [".....", ".....", "#...#", ".#.#.", "..#..", ".#.#.", "#...#"],
+  "y": [".....", ".....", "#...#", "#...#", ".####", "....#", ".###."],
+  "z": [".....", ".....", "#####", "...#.", "..#..", ".#...", "#####"],
+  "?": [".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."]
 };
 
 // CRC32（PNG 分块校验）
@@ -246,74 +268,84 @@ function encodePng(width, height, rgb) {
 }
 
 function renderCaptcha(text) {
-  const scale = 6;
+  const SS = 2;                 // 超采样：先按 2 倍画，再缩回来，边缘平滑
+  const W = 130, H = 44;        // 和 GD 版一样的画布尺寸
+  const W2 = W * SS, H2 = H * SS;
+  const scale = 3 * SS;         // 点阵放大倍数（缩回后一个字符 15x21）
   const gw = 5, gh = 7;
-  const gap = 3;
-  const cellW = gw * scale;
-  const cellH = gh * scale;
-  const padX = 12, padY = 14;
-  // 画布宽度固定（前端 CSS 也按这个宽度写死），算式短时居中留白，
-  // 这样不同算式的验证码图尺寸一致，前端不会拉伸变形
-  const width = 186;
-  const height = padY * 2 + cellH;
-  const textW = text.length * (cellW + gap) - gap;
-  const px = Buffer.alloc(width * height * 3);
+  const px = Buffer.alloc(W2 * H2 * 3);
 
-  // 背景：深色 + 轻微渐变噪声
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 3;
-      const n = (Math.random() * 14) | 0;
-      px[i] = 8 + n; px[i + 1] = 14 + n; px[i + 2] = 20 + n;
-    }
+  // 背景
+  for (let i = 0; i < W2 * H2; i++) {
+    px[i * 3] = 244; px[i * 3 + 1] = 248; px[i * 3 + 2] = 252;
   }
 
-  function setPixel(x, y, r, g, b) {
-    if (x < 0 || y < 0 || x >= width || y >= height) return;
-    const i = (y * width + x) * 3;
+  function set(x, y, r, g, b) {
+    if (x < 0 || y < 0 || x >= W2 || y >= H2) return;
+    const i = (y * W2 + x) * 3;
     px[i] = r; px[i + 1] = g; px[i + 2] = b;
   }
 
-  // 干扰线
-  for (let i = 0; i < 5; i++) {
-    const x0 = Math.random() * width, y0 = Math.random() * height;
-    const x1 = Math.random() * width, y1 = Math.random() * height;
-    const c = [Math.random() * 120 + 40, Math.random() * 120 + 40, Math.random() * 120 + 40];
-    const steps = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
-    for (let s = 0; s <= steps; s++) {
-      const t = steps ? s / steps : 0;
-      setPixel(Math.round(x0 + (x1 - x0) * t), Math.round(y0 + (y1 - y0) * t), c[0], c[1], c[2]);
+  // 干扰弧线：随机圆心 + 半径 + 起止角，画一段椭圆弧
+  for (let i = 0; i < 4; i++) {
+    const cx = Math.random() * W2, cy = Math.random() * H2;
+    const rx = (15 + Math.random() * 30) * SS, ry = (10 + Math.random() * 20) * SS;
+    const a0 = Math.random() * Math.PI * 2;
+    const a1 = a0 + 0.6 + Math.random() * 1.8;
+    const r = 150 + Math.random() * 60, g = 160 + Math.random() * 55, b = 180 + Math.random() * 55;
+    for (let a = a0; a <= a1; a += 0.02) {
+      set(Math.round(cx + Math.cos(a) * rx), Math.round(cy + Math.sin(a) * ry), r, g, b);
     }
   }
+
   // 噪点
-  for (let i = 0; i < width * height / 8; i++) {
-    const c = Math.random() * 90 + 60;
-    setPixel((Math.random() * width) | 0, (Math.random() * height) | 0, c, c, c);
+  for (let i = 0; i < 560; i++) {
+    const c = 130 + Math.random() * 90;
+    set((Math.random() * W2) | 0, (Math.random() * H2) | 0, c, c, c);
   }
 
-  // 字符：每个字符独立竖直偏移 + 错位，绿色系
-  const palette = [[70, 243, 167], [255, 180, 84], [120, 220, 255], [180, 255, 120]];
-  let cx = Math.max(padX, Math.round((width - textW) / 2));   // 居中
+  // 字符：逐个随机抖动 + 随机颜色
+  let x = 12 * SS;
   for (const ch of text) {
-    if (ch === " ") { cx += Math.round(cellW * 0.6); continue; }
     const glyph = GLYPHS[ch] || GLYPHS["?"];
-    const color = palette[(Math.random() * palette.length) | 0];
-    const dy = ((Math.random() * 5) | 0) - 2;
-    const dx = ((Math.random() * 3) | 0) - 1;
+    const cr = 30 + Math.random() * 80, cg = 50 + Math.random() * 80, cb = 90 + Math.random() * 90;
+    const dx = ((Math.random() * 5) | 0) - 2;
+    const dy = ((Math.random() * 7) | 0) - 3;
     for (let gy = 0; gy < gh; gy++) {
       for (let gx = 0; gx < gw; gx++) {
         if (glyph[gy][gx] !== "#") continue;
         for (let sy = 0; sy < scale; sy++) {
           for (let sx = 0; sx < scale; sx++) {
-            setPixel(cx + gx * scale + sx + dx, padY + gy * scale + sy + dy,
-              color[0], color[1], color[2]);
+            set(x + gx * scale + sx + dx * SS,
+              11 * SS + gy * scale + sy + dy * SS, cr, cg, cb);
           }
         }
       }
     }
-    cx += cellW + gap;
+    x += 24 * SS;
   }
-  return encodePng(width, height, px);
+
+  return encodePng(W, H, downsample(px, W2, H2));
+}
+
+// 2x2 平均缩回原尺寸
+function downsample(src, w2, h2) {
+  const w = w2 >> 1, h = h2 >> 1;
+  const out = Buffer.alloc(w * h * 3);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let r = 0, g = 0, b = 0;
+      for (let dy = 0; dy < 2; dy++) {
+        for (let dx = 0; dx < 2; dx++) {
+          const i = ((y * 2 + dy) * w2 + (x * 2 + dx)) * 3;
+          r += src[i]; g += src[i + 1]; b += src[i + 2];
+        }
+      }
+      const o = (y * w + x) * 3;
+      out[o] = (r / 4) | 0; out[o + 1] = (g / 4) | 0; out[o + 2] = (b / 4) | 0;
+    }
+  }
+  return out;
 }
 
 // 线上是多副本负载均衡：验证码必须落盘，否则「签发在 A 副本、校验在 B 副本」必然失败
@@ -332,21 +364,12 @@ function writeCaptchas(obj) {
 }
 
 function issueCaptcha(fixedId) {
-  // 算式统一 5 个字符（a+b=? 或 a-b=?），画布宽度固定，识别与排版都好做
-  const a = 1 + ((Math.random() * 9) | 0);
-  const b = 1 + ((Math.random() * 9) | 0);
-  const plus = Math.random() < 0.7;
-  let text, answer;
-  if (plus) {
-    text = a + "+" + b + "=?";
-    answer = a + b;
-  } else {
-    // 减法：保证被减数 > 减数，且结果为正
-    const hi = Math.max(a, b);
-    const lo = Math.min(a, b);
-    text = hi + "-" + lo + "=?";
-    answer = hi - lo;
+  // 4 位小写字符（字符表和 GD 版一致）
+  let text = "";
+  for (let i = 0; i < CAPTCHA_LEN; i++) {
+    text += CAPTCHA_CHARS[(Math.random() * CAPTCHA_CHARS.length) | 0];
   }
+  const answer = text;
   const id = fixedId || require("crypto").randomBytes(16).toString("hex");
   if (process.env.DEBUG_CAPTCHA === "1") console.log("[captcha] " + text + " -> " + answer);
 
@@ -363,42 +386,18 @@ function issueCaptcha(fixedId) {
   return { id, answer, png: renderCaptcha(text) };
 }
 
-/* ---------------- Cloudflare Turnstile ----------------
-   服务端校验挂件 token：走 siteverify。
-   token 一次性、5 分钟过期；secret 只在服务端，永不下发到浏览器。
------------------------------------------------- */
-
-function verifyTurnstile(token, ip) {
-  return new Promise((resolve) => {
-    const body = "secret=" + encodeURIComponent(TURNSTILE_SECRET_KEY) +
-      "&response=" + encodeURIComponent(token) +
-      (ip && ip !== "unknown" ? "&remoteip=" + encodeURIComponent(ip) : "");
-    const req = https.request({
-      hostname: "challenges.cloudflare.com",
-      path: "/turnstile/v0/siteverify",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Content-Length": Buffer.byteLength(body)
-      },
-      timeout: 8000
-    }, (res) => {
-      let buf = "";
-      res.on("data", (d) => { buf += d; });
-      res.on("end", () => {
-        try {
-          const d = JSON.parse(buf || "{}");
-          resolve({ ok: !!d.success, errors: d["error-codes"] || [] });
-        } catch (e) {
-          resolve({ ok: false, errors: ["bad-response"] });
-        }
-      });
-    });
-    req.on("timeout", () => { req.destroy(new Error("timeout")); });
-    req.on("error", (e) => resolve({ ok: false, errors: ["network:" + e.message] }));
-    req.write(body);
-    req.end();
-  });
+// 校验一次性验证码：不管成不成都立刻作废（从共享文件里删掉）
+function verifyCaptcha(captchaId, captchaAnswer) {
+  const store = readCaptchas();
+  const rec = store[captchaId];
+  delete store[captchaId];
+  writeCaptchas(store);
+  if (!rec) return { ok: false, error: "验证码已过期，请重新获取" };
+  if (rec.exp < Date.now()) return { ok: false, error: "验证码已过期，请重新获取" };
+  if (String(rec.answer).toLowerCase() !== String(captchaAnswer || "").trim().toLowerCase()) {
+    return { ok: false, error: "验证码答案不对" };
+  }
+  return { ok: true };
 }
 
 /* ---------------- 限流 ----------------
@@ -409,28 +408,32 @@ function verifyTurnstile(token, ip) {
    也就不会出现「两次请求都读到旧表、后写的把先写的覆盖掉」。
 ------------------------------------------------ */
 
-function readRates() {
+function readRates(file) {
   try {
-    const raw = fs.readFileSync(RATE_FILE, "utf8");
+    const raw = fs.readFileSync(file || RATE_FILE, "utf8");
     const obj = JSON.parse(raw);
     return (obj && typeof obj === "object") ? obj : {};
   } catch (e) { return {}; }
 }
 
 function checkRate(ip) {
+  return checkRateTable(ip, RATE_FILE, WINDOW_MS, WINDOW_MAX, HOUR_MS, HOUR_MAX);
+}
+
+function checkRateTable(ip, file, winMs, winMax, hourMs, hourMax) {
   const now = Date.now();
-  const all = readRates();
+  const all = readRates(file);
   let rec = all[ip];
   if (!rec || typeof rec !== "object") rec = { win: [], hour: [] };
-  rec.win = (Array.isArray(rec.win) ? rec.win : []).filter(t => now - t < WINDOW_MS);
-  rec.hour = (Array.isArray(rec.hour) ? rec.hour : []).filter(t => now - t < HOUR_MS);
+  rec.win = (Array.isArray(rec.win) ? rec.win : []).filter(t => now - t < winMs);
+  rec.hour = (Array.isArray(rec.hour) ? rec.hour : []).filter(t => now - t < hourMs);
 
   let verdict = null;
-  if (rec.win.length >= WINDOW_MAX) {
-    const wait = Math.ceil((WINDOW_MS - (now - rec.win[0])) / 1000);
+  if (rec.win.length >= winMax) {
+    const wait = Math.ceil((winMs - (now - rec.win[0])) / 1000);
     verdict = { ok: false, code: 429, wait: Math.max(1, wait), msg: "发得太快了，" + wait + " 秒后再试" };
-  } else if (rec.hour.length >= HOUR_MAX) {
-    verdict = { ok: false, code: 429, wait: 60, msg: "本小时评论已达上限，稍后再来" };
+  } else if (rec.hour.length >= hourMax) {
+    verdict = { ok: false, code: 429, wait: 60, msg: "本小时操作已达上限，稍后再来" };
   } else {
     rec.win.push(now);
     rec.hour.push(now);
@@ -442,14 +445,14 @@ function checkRate(ip) {
   for (const k of Object.keys(all)) {
     const r = all[k];
     if (!r || typeof r !== "object") { delete all[k]; continue; }
-    const w = (Array.isArray(r.win) ? r.win : []).filter(t => now - t < WINDOW_MS);
-    const h = (Array.isArray(r.hour) ? r.hour : []).filter(t => now - t < HOUR_MS);
+    const w = (Array.isArray(r.win) ? r.win : []).filter(t => now - t < winMs);
+    const h = (Array.isArray(r.hour) ? r.hour : []).filter(t => now - t < hourMs);
     if (w.length === 0 && h.length === 0) delete all[k];
     else all[k] = { win: w, hour: h };
   }
 
   // 同步落盘：返回前表已更新，下一个请求一定看得到
-  writeFileAtomicTo(RATE_FILE, all);
+  writeFileAtomicTo(file, all);
 
   return verdict || { ok: true };
 }
@@ -505,6 +508,189 @@ async function listComments(postId) {
   return localAll().filter((c) => c.post === postId);
 }
 
+/* ---------------- 博客发布 ----------------
+   发布入口只有一个：网关。文章正文存在网关自己的 data/posts.json 里，
+   页面优先读这里，网关不可用时才回退到仓库里的 assets/data/posts.json。
+
+   密码：网关只存「盐 + 迭代次数 + 哈希」，收到密码后自己算一遍哈希再比对，
+   网关和源码里都没有明文。这份参数和 assets/js/blog.js 的 BLOG_AUTH 是同一份，
+   改密码时两处一起换：node gateway/hashpass.js "新密码"。
+------------------------------------------------ */
+
+const PUBLISH_AUTH = {
+  alg: "sha256-iter",
+  iterations: 10000,
+  salt: "52f6d42b2d4efb5dfd66413a493d1e00",
+  hash: "a7a1fe4f843238d81e56f8e525791ffafda06db90adc162edeb7e79abd544eb4"
+};
+
+const POSTS_FILE = path.join(__dirname, "data", "posts.json");
+const TOKEN_FILE = path.join(__dirname, "data", "tokens.json");
+const PUBLISH_RATE_FILE = path.join(__dirname, "data", "ratelimit-publish.json");
+
+const TOKEN_TTL_MS = 2 * 60 * 60 * 1000;      // 发布令牌 2 小时
+const MAX_POST_TITLE = 120;
+const MAX_POST_BODY = 200000;
+const MAX_POST_TAGS = 12;
+
+// 发布接口的限流比评论松一点：解锁一次要发几个请求
+const PUB_WINDOW_MS = parseInt(process.env.PUB_WINDOW_MS || String(10 * 1000), 10);
+const PUB_WINDOW_MAX = parseInt(process.env.PUB_WINDOW_MAX || "6", 10);
+const PUB_HOUR_MS = parseInt(process.env.PUB_HOUR_MS || String(60 * 60 * 1000), 10);
+const PUB_HOUR_MAX = parseInt(process.env.PUB_HOUR_MAX || "60", 10);
+
+function sha256Buf(buf) {
+  return require("crypto").createHash("sha256").update(buf).digest();
+}
+
+// 和前端同一套算法：H0 = SHA256(salt || password)，再迭代 iterations 次
+function hashPasswordIter(password, saltHex, iterations) {
+  const salt = Buffer.from(String(saltHex || ""), "hex");
+  let h = sha256Buf(Buffer.concat([salt, Buffer.from(String(password), "utf8")]));
+  for (let i = 0; i < (iterations || 10000); i++) h = sha256Buf(h);
+  return h.toString("hex");
+}
+
+function safeEqualStr(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  var diff = 0;
+  for (var i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+// 发布密码的参数：gateway/secrets.json 优先，其次环境变量，最后用内置默认
+function publishAuth() {
+  try {
+    const raw = fs.readFileSync(path.join(__dirname, "secrets.json"), "utf8");
+    const s = JSON.parse(raw);
+    if (s && s.publishAuth && s.publishAuth.hash) return s.publishAuth;
+  } catch (e) { /* 没有就用下面的默认值 */ }
+  if (process.env.BLOG_PW_HASH) {
+    return {
+      iterations: parseInt(process.env.BLOG_PW_ITERATIONS || "10000", 10),
+      salt: process.env.BLOG_PW_SALT || "",
+      hash: process.env.BLOG_PW_HASH
+    };
+  }
+  return PUBLISH_AUTH;
+}
+
+function checkPublishPassword(password) {
+  if (!password) return false;
+  const auth = publishAuth();
+  if (!auth || !auth.hash || !auth.salt) return false;
+  const got = hashPasswordIter(password, auth.salt, auth.iterations);
+  return safeEqualStr(got, String(auth.hash).toLowerCase());
+}
+
+/* ---- 发布令牌：解锁时用密码换一次，之后发布/删除都带令牌 ---- */
+
+function readTokens() {
+  try {
+    const obj = JSON.parse(fs.readFileSync(TOKEN_FILE, "utf8"));
+    return (obj && typeof obj === "object") ? obj : {};
+  } catch (e) { return {}; }
+}
+
+function writeTokens(obj) {
+  writeFileAtomicTo(TOKEN_FILE, obj);
+}
+
+function issueToken() {
+  const token = require("crypto").randomBytes(24).toString("hex");
+  const store = readTokens();
+  const now = Date.now();
+  for (const k of Object.keys(store)) {
+    if (!store[k] || store[k].exp < now) delete store[k];
+  }
+  const exp = now + TOKEN_TTL_MS;
+  store[token] = { exp: exp };
+  writeTokens(store);
+  return { token: token, expires: exp };
+}
+
+function tokenValid(token) {
+  if (!token) return false;
+  const store = readTokens();
+  const rec = store[token];
+  return !!(rec && rec.exp >= Date.now());
+}
+
+// 发布请求的两种凭据：解锁换来的令牌，或者直接给密码
+function authorizePublish(payload) {
+  if (tokenValid(clean(payload.token || "", 64))) return true;
+  return checkPublishPassword(String(payload.password == null ? "" : payload.password));
+}
+
+/* ---- 文章存储 ---- */
+
+function readPosts() {
+  try {
+    const obj = JSON.parse(fs.readFileSync(POSTS_FILE, "utf8"));
+    if (obj && Array.isArray(obj.posts)) return obj.posts;
+    if (Array.isArray(obj)) return obj;
+    return [];
+  } catch (e) { return []; }
+}
+
+function writePosts(posts) {
+  writeFileAtomicTo(POSTS_FILE, { posts: posts });
+}
+
+// 正文要保留换行，所以不能走 clean()（它会删掉控制字符）
+function cleanBody(s, max) {
+  var str = String(s == null ? "" : s);
+  var out = "";
+  for (var i = 0; i < str.length; i++) {
+    var c = str.charCodeAt(i);
+    if (c === 0x0d) continue;                                  // \r\n 归一成 \n
+    if (c === 0x09 || c === 0x0a) { out += String.fromCharCode(c); continue; }
+    if (c < 0x20 || c === 0x7f) continue;
+    out += str.charAt(i);
+  }
+  return out.slice(0, max);
+}
+
+function normalizePost(input) {
+  const p = (input && typeof input === "object") ? input : {};
+  const title = clean(p.title || "", MAX_POST_TITLE);
+  if (!title) return null;
+  const body = cleanBody(p.body || "", MAX_POST_BODY);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(p.date || "")) ? String(p.date) : new Date().toISOString().slice(0, 10);
+  const tags = (Array.isArray(p.tags) ? p.tags : [])
+    .map(function (t) { return clean(t, 24); })
+    .filter(Boolean)
+    .slice(0, MAX_POST_TAGS);
+  const id = clean(p.id || "", 64) || ("p" + Date.now().toString(36));
+  return { id: id, title: title, date: date, tags: tags, body: body };
+}
+
+function sortPosts(posts) {
+  return posts.slice().sort(function (a, b) {
+    return String(b.date || "").localeCompare(String(a.date || ""));
+  });
+}
+
+// 网关重启、data/ 被覆盖之后，文章库可能是空的：从线上站点把仓库里那份拉回来当种子
+async function seedPosts() {
+  if (readPosts().length) return;
+  try {
+    const res = await fetch("https://pen-pig.github.io/assets/data/posts.json", {
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const posts = (data && Array.isArray(data.posts)) ? data.posts : [];
+    if (posts.length) {
+      writePosts(posts);
+      console.log("[gateway] 已从线上拉回种子文章：" + posts.length + " 篇");
+    }
+  } catch (e) {
+    console.warn("[gateway] 种子文章拉取失败（不影响使用）：" + e.message);
+  }
+}
+
 /* ---------------- HTTP 服务 ---------------- */
 
 function readBody(req) {
@@ -541,7 +727,7 @@ const server = http.createServer(async (req, res) => {
   if (path_ === "/api/health") {
     json(res, 200, {
       ok: true, storage: "file", count: localAll().length,
-      captcha: USE_TURNSTILE ? "turnstile" : "local",
+      captcha: "gd",
       instance: INSTANCE_ID
     });
     return;
@@ -549,10 +735,6 @@ const server = http.createServer(async (req, res) => {
 
   // 图形验证码
   if (path_ === "/api/captcha" && req.method === "GET") {
-    if (USE_TURNSTILE) {
-      json(res, 200, { mode: "turnstile", siteKey: TURNSTILE_SITE_KEY });
-      return;
-    }
     // 客户端可以自带 id：图片 URL 里的 id 与服务端存的答案一一对应，
     // 避免「图片请求」和「取 id 请求」各生成一张不同验证码导致答案对不上。
     let id = clean(url.searchParams.get("id") || "", 64);
@@ -674,30 +856,11 @@ const server = http.createServer(async (req, res) => {
     if (!content) { json(res, 400, { error: "评论内容不能为空" }); return; }
     if (content.length < 2) { json(res, 400, { error: "评论太短了" }); return; }
 
-    // 验证码校验（服务端持有答案）
-    if (USE_TURNSTILE) {
-      if (!captchaAnswer) {
-        json(res, 400, { error: "请先完成人机验证", needCaptcha: true });
-        return;
-      }
-      const vr = await verifyTurnstile(captchaAnswer, ip);
-      if (!vr.ok) {
-        console.error("[gateway] Turnstile rejected:", vr.errors.join(","));
-        json(res, 400, { error: "人机验证未通过，请重试", needCaptcha: true });
-        return;
-      }
-    } else {
-      // 一次性：校验并立即作废（从共享文件里删掉）
-      const store = readCaptchas();
-      const rec = store[captchaId];
-      delete store[captchaId];
-      writeCaptchas(store);
-      if (!rec) { json(res, 400, { error: "验证码已过期，请重新获取", needCaptcha: true }); return; }
-      if (rec.exp < Date.now()) { json(res, 400, { error: "验证码已过期，请重新获取", needCaptcha: true }); return; }
-      if (String(rec.answer) !== String(captchaAnswer)) {
-        json(res, 400, { error: "验证码答案不对", needCaptcha: true });
-        return;
-      }
+    // 验证码校验（答案在服务端，校验后立即作废）
+    const cap = verifyCaptcha(captchaId, captchaAnswer);
+    if (!cap.ok) {
+      json(res, 400, { error: cap.error, needCaptcha: true });
+      return;
     }
 
     // 限流（验证码过了才计数，避免刷验证码耗配额）
@@ -775,13 +938,125 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  /* ---- 博客发布 ---- */
+
+  // 读文章：页面优先读这里
+  if (path_ === "/api/posts" && req.method === "GET") {
+    json(res, 200, { ok: true, posts: sortPosts(readPosts()), storage: "file" });
+    return;
+  }
+
+  // 解锁：用发布密码换一个临时令牌，之后发布/删除都带令牌
+  if (path_ === "/api/publish/token" && req.method === "POST") {
+    const ip = clientIp(req);
+    let payload;
+    try {
+      payload = JSON.parse(await readBody(req) || "{}");
+    } catch (e) {
+      json(res, 400, { error: "请求格式不对" });
+      return;
+    }
+    const rate = checkRateTable(ip, PUBLISH_RATE_FILE, PUB_WINDOW_MS, PUB_WINDOW_MAX, PUB_HOUR_MS, PUB_HOUR_MAX);
+    if (!rate.ok) {
+      json(res, rate.code, { error: rate.msg, retryAfter: rate.wait }, { "Retry-After": String(rate.wait) });
+      return;
+    }
+    if (!checkPublishPassword(String(payload.password == null ? "" : payload.password))) {
+      json(res, 403, { error: "密码不对" });
+      return;
+    }
+    const t = issueToken();
+    json(res, 200, { ok: true, token: t.token, expires: t.expires });
+    return;
+  }
+
+  // 发布 / 覆盖一篇文章
+  if (path_ === "/api/posts" && req.method === "POST") {
+    const ip = clientIp(req);
+    let payload;
+    try {
+      payload = JSON.parse(await readBody(req) || "{}");
+    } catch (e) {
+      json(res, 400, { error: "请求格式不对" });
+      return;
+    }
+    const rate = checkRateTable(ip, PUBLISH_RATE_FILE, PUB_WINDOW_MS, PUB_WINDOW_MAX, PUB_HOUR_MS, PUB_HOUR_MAX);
+    if (!rate.ok) {
+      json(res, rate.code, { error: rate.msg, retryAfter: rate.wait }, { "Retry-After": String(rate.wait) });
+      return;
+    }
+    if (!authorizePublish(payload)) {
+      json(res, 403, { error: "发布密码不对，或令牌已过期" });
+      return;
+    }
+    const cap = verifyCaptcha(clean(payload.captchaId || "", 64), clean(payload.captchaAnswer || "", 16));
+    if (!cap.ok) {
+      json(res, 400, { error: cap.error, needCaptcha: true });
+      return;
+    }
+    const post = normalizePost(payload.post);
+    if (!post) {
+      json(res, 400, { error: "标题不能为空" });
+      return;
+    }
+    const posts = readPosts();
+    let idx = -1;
+    for (let i = 0; i < posts.length; i++) {
+      if (posts[i] && posts[i].id === post.id) { idx = i; break; }
+    }
+    if (idx >= 0) posts[idx] = post; else posts.push(post);
+    writePosts(sortPosts(posts));
+    json(res, 200, { ok: true, post: post, posts: sortPosts(posts), storage: "file" });
+    return;
+  }
+
+  // 删掉一篇文章
+  if (path_ === "/api/posts/delete" && req.method === "POST") {
+    const ip = clientIp(req);
+    let payload;
+    try {
+      payload = JSON.parse(await readBody(req) || "{}");
+    } catch (e) {
+      json(res, 400, { error: "请求格式不对" });
+      return;
+    }
+    const rate = checkRateTable(ip, PUBLISH_RATE_FILE, PUB_WINDOW_MS, PUB_WINDOW_MAX, PUB_HOUR_MS, PUB_HOUR_MAX);
+    if (!rate.ok) {
+      json(res, rate.code, { error: rate.msg, retryAfter: rate.wait }, { "Retry-After": String(rate.wait) });
+      return;
+    }
+    if (!authorizePublish(payload)) {
+      json(res, 403, { error: "发布密码不对，或令牌已过期" });
+      return;
+    }
+    const cap = verifyCaptcha(clean(payload.captchaId || "", 64), clean(payload.captchaAnswer || "", 16));
+    if (!cap.ok) {
+      json(res, 400, { error: cap.error, needCaptcha: true });
+      return;
+    }
+    const id = clean(payload.id || "", 64);
+    const posts = readPosts();
+    const rest = posts.filter(function (p) { return !p || p.id !== id; });
+    if (rest.length === posts.length) {
+      json(res, 404, { error: "文章不存在" });
+      return;
+    }
+    writePosts(sortPosts(rest));
+    json(res, 200, { ok: true, id: id, posts: sortPosts(rest) });
+    return;
+  }
+
   json(res, 404, { error: "not found" });
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log("[gateway] listening on 0.0.0.0:" + PORT +
-    "  storage=file" +
-    "  captcha=" + (USE_TURNSTILE ? "turnstile" : "local"));
-});
+if (require.main === module) {
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log("[gateway] listening on 0.0.0.0:" + PORT +
+      "  storage=file" +
+      "  captcha=gd" +
+      "  publish=on");
+    seedPosts();
+  });
+}
 
-module.exports = { server };
+module.exports = { server, renderCaptcha, encodePng, GLYPHS };

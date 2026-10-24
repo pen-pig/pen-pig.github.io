@@ -10,7 +10,7 @@
     - 作者可以删掉自己那条（匿名无账号 → 用「删除码」代替密码）
 
   后端是同仓库的 gateway/（Node 服务），负责：
-    - 人机验证（Cloudflare Turnstile，或退回本地图形验证码）
+    - 人机验证（GD 风格图形验证码：4 位小写字符 + 干扰弧线 + 噪点）
     - 按来源 IP 限流
     - 存进网关自己的本地 JSON 文件（不依赖任何外部服务）
     - 配图落盘 + 校验魔数，删除码只存哈希
@@ -86,9 +86,7 @@
   /* ---------- 状态 ---------- */
   var state = {
     postId: "",
-    captchaMode: "local",  // local | turnstile
     captchaId: "",
-    turnstileToken: "",
     submitting: false,
     comments: [],
     ready: false,
@@ -113,8 +111,6 @@
     el.submit = $("#cmtSubmit");
     el.status = $("#cmtStatus");
     el.count = $("#cmtCount");
-    el.tsHost = $("#cmtTurnstile");
-    el.localBox = $("#cmtLocalCaptcha");
     el.file = $("#cmtImage");
     el.preview = $("#cmtImagePreview");
     el.previewImg = $("#cmtImagePreviewImg");
@@ -127,72 +123,11 @@
     return true;
   }
 
-  /* ---------- 人机验证：模式探测 ---------- */
-  function detectCaptcha() {
-    return fetch(apiQ("/api/captcha", { mode: "probe", t: Date.now() }), { method: "GET" })
-      .then(function (r) {
-        var ct = r.headers.get("Content-Type") || "";
-        if (ct.indexOf("image/") >= 0) return { mode: "local" };
-        return r.json();
-      })
-      .then(function (d) {
-        if (d && d.mode === "turnstile") {
-          state.captchaMode = "turnstile";
-          state.turnstileSiteKey = d.siteKey;
-          renderTurnstile();
-        } else {
-          state.captchaMode = "local";
-          loadLocalCaptcha();
-        }
-        state.ready = true;
-      })
-      .catch(function () {
-        // 网关不可达：仍显示本地验证码区，提交时会提示网络错误
-        state.captchaMode = "local";
-        loadLocalCaptcha();
-        state.ready = true;
-      });
-  }
-
-  /* ---------- Turnstile 挂件 ---------- */
-  function renderTurnstile() {
-    if (!el.tsHost) return;
-    // 切到 Turnstile 模式时，本地图形验证码整块收起
-    if (el.localBox) el.localBox.hidden = true;
-    el.tsHost.hidden = false;
-    if (window.turnstile) { mountTurnstile(); return; }
-    var s = document.createElement("script");
-    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-    s.async = true;
-    s.defer = true;
-    s.onload = mountTurnstile;
-    document.head.appendChild(s);
-  }
-
-  function mountTurnstile() {
-    if (!window.turnstile || !el.tsHost) return;
-    if (window.__penpigTurnstileId) {
-      try { window.turnstile.remove(window.__penpigTurnstileId); } catch (e) {}
-    }
-    el.tsHost.innerHTML = "";
-    window.__penpigTurnstileId = window.turnstile.render(el.tsHost, {
-      sitekey: state.turnstileSiteKey,
-      callback: function (token) { state.turnstileToken = token; },
-      "expired-callback": function () { state.turnstileToken = ""; },
-      "error-callback": function () { state.turnstileToken = ""; }
-    });
-  }
-
-  function resetTurnstile() {
-    state.turnstileToken = "";
-    if (window.turnstile && window.__penpigTurnstileId) window.turnstile.reset(window.__penpigTurnstileId);
-  }
-
-  /* ---------- 本地图形验证码 ---------- */
+  /* ---------- 人机验证 ----------
+     只有一种模式：GD 风格图形验证码。图片地址里带自己生成的 id，
+     服务端按这个 id 存答案，「看到的图」和「提交的 id」必然是同一张。 */
   function loadLocalCaptcha() {
     if (!el.img) return;
-    // 客户端自己生成 id 并放进图片 URL，服务端按这个 id 存答案 ——
-    // 这样「看到的图」和「提交的 id」必然是同一张验证码
     var id = "";
     try {
       var buf = new Uint8Array(16);
@@ -408,14 +343,9 @@
 
     if (content.length < 2) { setStatus("评论太短了", "err"); el.body.focus(); return; }
 
-    if (state.captchaMode === "turnstile") {
-      answer = state.turnstileToken;
-      if (!answer) { setStatus("请先完成人机验证", "err"); return; }
-    } else {
-      answer = el.answer.value.trim();
-      if (!answer) { setStatus("请填写验证码答案", "err"); el.answer.focus(); return; }
-      if (!state.captchaId) { setStatus("验证码还没准备好，稍等一下", "err"); loadLocalCaptcha(); return; }
-    }
+    answer = el.answer.value.trim();
+    if (!answer) { setStatus("请填写验证码答案", "err"); el.answer.focus(); return; }
+    if (!state.captchaId) { setStatus("验证码还没准备好，稍等一下", "err"); loadLocalCaptcha(); return; }
 
     state.submitting = true;
     el.submit.disabled = true;
@@ -449,20 +379,17 @@
           exitReply();
           setStatus("已发布，谢谢！", "ok");
           if (res.data.delKey) showDelKey(res.data.delKey);
-          if (state.captchaMode === "turnstile") resetTurnstile();
-          else loadLocalCaptcha();
+          loadLocalCaptcha();
           return;
         }
         var msg = (res.data && res.data.error) || "发布失败";
         setStatus(msg, "err");
         // 验证凭证用过即废，任何失败都要换新的
-        if (state.captchaMode === "turnstile") resetTurnstile();
-        else loadLocalCaptcha();
+        loadLocalCaptcha();
       })
       .catch(function () {
         setStatus("网络错误，稍后再试", "err");
-        if (state.captchaMode === "turnstile") resetTurnstile();
-        else loadLocalCaptcha();
+        loadLocalCaptcha();
       })
       .then(function () {
         state.submitting = false;
@@ -549,11 +476,12 @@
     mount: function (postId) {
       if (!bindDom()) return;
       state.postId = postId || "";
-      detectCaptcha();
+      loadLocalCaptcha();
       loadComments();
       if (el.reload) el.reload.addEventListener("click", function () {
-        if (state.captchaMode === "turnstile") resetTurnstile();
-        else { loadLocalCaptcha(); if (el.answer) el.answer.value = ""; el.answer.focus(); }
+        loadLocalCaptcha();
+        if (el.answer) el.answer.value = "";
+        el.answer.focus();
       });
       if (el.submit) el.submit.addEventListener("click", submit);
       if (el.img) el.img.addEventListener("click", function () {

@@ -11,7 +11,7 @@
   <meta property="og:url" content="https://pen-pig.github.io/blog.html">
   <meta name="theme-color" content="#06080c">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306080c'/%3E%3Cpath d='M18 20l16 12-16 12' stroke='%2346f3a7' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="assets/css/style.css?v=2">
+  <link rel="stylesheet" href="assets/css/style.css?v=3">
 </head>
 <body>
 
@@ -42,24 +42,24 @@
       <a class="os-back" href="index.html">← 返回主页</a>
       <p class="tape"><span>BLOG</span><span class="tape-dim">// NOTES &amp; LOGS</span></p>
       <h1 class="os-title">博客</h1>
-      <p class="os-sub">踩坑记录、项目笔记与折腾日常。<b>查看完全公开</b>；发布需要密码——纯静态站点没有服务端，新文章会先存在这台浏览器里，导出 <code>posts.json</code> 推送后大家才看得到。</p>
+      <p class="os-sub">踩坑记录、项目笔记与折腾日常。<b>查看完全公开</b>；发布需要密码——解锁后写完点「发布上线」，服务端校验通过就立刻生效，所有访客都能看到。</p>
     </section>
 
     <!-- ============ 工具条 ============ -->
     <div class="blog-toolbar panel">
       <span class="blog-count" id="blogCount">加载中…</span>
+      <span class="blog-status" id="blogStatus" role="status"></span>
       <div class="blog-toolbar-right">
         <input class="blog-search" id="blogSearch" type="search" placeholder="搜索标题 / 标签 / 正文…" aria-label="搜索文章">
         <button class="btn btn-ghost" id="btnUnlock" type="button">🔓 解锁编辑</button>
         <span class="blog-edit-tools" id="editTools" hidden>
           <button class="btn btn-primary" id="btnNew" type="button">＋ 新建文章</button>
-          <button class="btn btn-ghost" id="btnExport" type="button">⬇ 导出 posts.json</button>
         </span>
       </div>
     </div>
 
     <p class="blog-edit-banner" id="editBanner" hidden>
-      编辑模式已解锁——改动只保存在<b>这台浏览器</b>（localStorage）。导出 <code>posts.json</code> 替换仓库里的 <code>assets/data/posts.json</code> 并推送，所有访客才能看到。点「锁定编辑」退出。
+      编辑模式已解锁——写完点「发布上线」会推到线上（服务端会校验密码和人机验证）；只点「存草稿」的改动就留在这台浏览器里。点「锁定编辑」退出。
     </p>
 
     <!-- ============ 主体：列表 + 阅读区 ============ -->
@@ -96,15 +96,11 @@
         <label class="comment-field comment-field-captcha" id="cmtLocalCaptcha">
           <span>验证码</span>
           <span class="captcha-row">
-            <img class="captcha-img" id="cmtCaptcha" alt="点击刷新验证码" title="点击刷新" width="186" height="70">
-            <input class="comment-input comment-input-answer" id="cmtAnswer" type="text" inputmode="numeric" maxlength="4" placeholder="答案" autocomplete="off">
+            <img class="captcha-img" id="cmtCaptcha" alt="点击刷新验证码" title="点击刷新" width="130" height="44">
+            <input class="comment-input comment-input-answer" id="cmtAnswer" type="text" maxlength="4" placeholder="4 个字符" autocomplete="off" autocapitalize="off" spellcheck="false">
             <button class="btn btn-ghost comment-refresh" id="cmtReload" type="button" title="换一张" aria-label="换一张验证码"><span class="refresh-icon" aria-hidden="true"></span></button>
           </span>
         </label>
-        <div class="comment-field comment-field-turnstile" id="cmtTurnstile" hidden>
-          <span class="comment-field-label">人机验证</span>
-          <div class="turnstile-host"></div>
-        </div>
       </div>      <label class="comment-field">
         <span>评论内容</span>
         <textarea class="comment-input comment-textarea" id="cmtBody" rows="3" maxlength="1000" placeholder="说点什么…"></textarea>
@@ -141,7 +137,7 @@
   <div class="modal" id="pwModal" hidden>
     <div class="modal-card panel">
       <h2 class="modal-title">解锁编辑模式</h2>
-      <p class="modal-sub">输入发布密码。密码在浏览器里算哈希后比对，源码里只有盐和哈希、没有明文。</p>
+      <p class="modal-sub">输入发布密码。密码在浏览器里算哈希后比对，源码里只有盐和哈希、没有明文；解锁时也会向网关校验一次，之后发文章就不用再输了。</p>
       <input class="modal-input" id="pwInput" type="password" placeholder="发布密码" autocomplete="off">
       <p class="modal-error" id="pwError" hidden>密码不对，再试试。</p>
       <div class="modal-ops">
@@ -172,7 +168,31 @@
       </label>
       <div class="modal-ops">
         <button class="btn btn-ghost" id="edCancel" type="button">取消</button>
-        <button class="btn btn-primary" id="edSave" type="button">保存</button>
+        <button class="btn btn-ghost" id="edSave" type="button">存草稿</button>
+        <button class="btn btn-primary" id="edPublish" type="button">发布上线</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 发布确认模态 ============ -->
+  <div class="modal" id="publishModal" hidden>
+    <div class="modal-card panel">
+      <h2 class="modal-title" id="pubHeading">发布上线</h2>
+      <p class="modal-sub" id="pubDesc">确认后这篇文章会立刻出现在线上。</p>
+      <label class="modal-field">验证码
+        <span class="captcha-row">
+          <img class="captcha-img" id="pubCaptcha" alt="点击刷新验证码" title="点击刷新" width="130" height="44">
+          <input class="modal-input modal-input-answer" id="pubAnswer" type="text" maxlength="4" placeholder="4 个字符" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button class="btn btn-ghost comment-refresh" id="pubReload" type="button" title="换一张" aria-label="换一张验证码"><span class="refresh-icon" aria-hidden="true"></span></button>
+        </span>
+      </label>
+      <label class="modal-field" id="pubPwField" hidden>发布密码
+        <input class="modal-input" id="pubPassword" type="password" placeholder="发布密码" autocomplete="off">
+      </label>
+      <p class="modal-error" id="pubError" hidden></p>
+      <div class="modal-ops">
+        <button class="btn btn-ghost" id="pubCancel" type="button">取消</button>
+        <button class="btn btn-primary" id="pubConfirm" type="button">确认发布</button>
       </div>
     </div>
   </div>
@@ -187,7 +207,7 @@
   </footer>
 
   <script src="assets/js/main.js?v=2" defer></script>
-  <script src="assets/js/comments.js?v=2" defer></script>
-  <script src="assets/js/blog.js?v=2" defer></script>
+  <script src="assets/js/comments.js?v=3" defer></script>
+  <script src="assets/js/blog.js?v=3" defer></script>
 </body>
 </html>

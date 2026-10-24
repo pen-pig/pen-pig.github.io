@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-评论数据备份 / 恢复工具
+评论 / 文章数据备份 / 恢复工具
 ------------------------------------------------------------
 为什么需要它：
   网关重新部署时，线上沙箱的 data/ 目录会被本地文件覆盖，
-  也就是「重新部署 = 清空线上评论」。这个脚本在部署前把线上数据拉回本地，
-  部署时就会一起带上，评论就不会丢。
+  也就是「重新部署 = 清空线上评论和文章」。这个脚本在部署前把线上数据拉回本地，
+  部署时就会一起带上，数据就不会丢。
 
 用法：
-  python3 gateway/backup.py pull    # 从线上拉取全部评论，存到本地 data/comments.json
+  python3 gateway/backup.py pull    # 从线上拉取评论和文章，存到本地 data/
   python3 gateway/backup.py push    # 把本地 data/comments.json 推回线上（覆盖）
   python3 gateway/backup.py show    # 只看线上/本地各有几条
 
@@ -26,6 +26,7 @@ BASE = "https://pen-pig-comment-gateway.app.workbuddy.host"
 CODE = "OBVHYSCDUX"
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOCAL = os.path.join(HERE, "data", "comments.json")
+LOCAL_POSTS = os.path.join(HERE, "data", "posts.json")
 UPLOAD_DIR = os.path.join(HERE, "data", "uploads")
 
 
@@ -64,6 +65,17 @@ def pull():
             except Exception as e:
                 print(f"  [warn] 配图拉取失败 {name}: {e}")
         print(f"已拉取 {got}/{len(images)} 张配图 -> {UPLOAD_DIR}")
+
+    # 文章：线上正式内容就在网关自己的库里，部署前一起拉回来
+    try:
+        pdata = get("/api/posts")
+        posts = pdata.get("posts", [])
+        with open(LOCAL_POSTS, "w", encoding="utf-8") as f:
+            json.dump({"posts": posts}, f, ensure_ascii=False, indent=2)
+        print(f"已拉取 {len(posts)} 篇文章 -> {LOCAL_POSTS}")
+    except Exception as e:
+        print(f"  [warn] 文章拉取失败 {e}")
+
     return comments
 
 
@@ -79,14 +91,24 @@ def push():
 def show():
     try:
         online = get("/api/comments/export")
-        print("线上：", online.get("count"), "条")
+        print("线上评论：", online.get("count"), "条")
     except Exception as e:
         print("线上读取失败：", e)
     try:
+        online_posts = get("/api/posts")
+        print("线上文章：", len(online_posts.get("posts", [])), "篇")
+    except Exception as e:
+        print("线上文章读取失败：", e)
+    try:
         with open(LOCAL, "r", encoding="utf-8") as f:
-            print("本地：", len(json.load(f)), "条")
+            print("本地评论：", len(json.load(f)), "条")
     except Exception as e:
         print("本地读取失败：", e)
+    try:
+        with open(LOCAL_POSTS, "r", encoding="utf-8") as f:
+            print("本地文章：", len(json.load(f).get("posts", [])), "篇")
+    except Exception as e:
+        print("本地文章读取失败：", e)
 
 
 if __name__ == "__main__":

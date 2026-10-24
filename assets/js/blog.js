@@ -1,9 +1,11 @@
 /* ============================================================
    pen-pig.github.io — blog.js
    博客：查看（公开）/ 发布（密码解锁编辑模式）
-   数据流：assets/data/posts.json（仓库基线）
-        + localStorage 本地改动（新增 / 修改 / 删除）
-        → 合并渲染；「导出 posts.json」把合并结果写回仓库基线
+   数据流：网关 GET /api/posts（线上的正式文章）
+        → 网关不可用时回退到 assets/data/posts.json（仓库里的快照）
+        + localStorage 草稿（还没发布的改动）
+   发布：解锁时用密码向网关换一个临时令牌，
+        「发布上线」= 验证码 + 令牌 → 网关写回文章库，所有访客立刻可见
    ============================================================ */
 (function () {
   "use strict";
@@ -12,16 +14,44 @@
   var DATA_URL = "assets/data/posts.json";
   var LS_KEY = "pen-pig-blog-local-v1";
   var UNLOCK_KEY = "pen-pig-blog-unlocked";
+  var TOKEN_KEY = "pen-pig-blog-token";
+
   /* 发布密码只以「盐 + 迭代次数 + 哈希」的形式存在源码里，没有明文。
-     算法：H0 = SHA256(salt || password)，再迭代 iterations 次 SHA256(H)
-          —— 加盐 + 多轮迭代，把离线爆破的成本抬高 orders 级别。
-     改密码：node gateway/hashpass.js "新密码" → 把输出的 JSON 粘到这里。 */
+     算法：H0 = SHA256(salt || password)，再迭代 iterations 次 SHA256(H)。
+     改密码：node gateway/hashpass.js "新密码" → 把输出的 JSON 粘到这里，
+     同时粘到 gateway/server.js 的 PUBLISH_AUTH（网关要自己校验一遍）。 */
   var BLOG_AUTH = {
     alg: "sha256-iter",
     iterations: 10000,
     salt: "52f6d42b2d4efb5dfd66413a493d1e00",
     hash: "a7a1fe4f843238d81e56f8e525791ffafda06db90adc162edeb7e79abd544eb4"
   };
+
+  /* 网关地址：线上是独立域名，与 GitHub Pages 不同源（走 CORS）。
+     "?local=1" 强制走本地网关（联调用）。 */
+  var LOCAL_GATEWAY = "http://127.0.0.1:8791";
+  var SHARE_CODE = "OBVHYSCDUX";
+  var GATEWAY = (location.search.indexOf("local=1") >= 0)
+    ? LOCAL_GATEWAY
+    : "https://pen-pig-comment-gateway.app.workbuddy.host";
+
+  function api(path) {
+    if (GATEWAY === LOCAL_GATEWAY) return GATEWAY + path;
+    return GATEWAY + path + "?sharecode=" + encodeURIComponent(SHARE_CODE);
+  }
+
+  /* 拼接带额外参数的接口地址：避免出现两个 ? 把 sharecode 参数弄坏 */
+  function apiQ(path, params) {
+    var base = api(path);
+    var qs = [];
+    for (var k in params) {
+      if (Object.prototype.hasOwnProperty.call(params, k)) {
+        qs.push(encodeURIComponent(k) + "=" + encodeURIComponent(params[k]));
+      }
+    }
+    if (!qs.length) return base;
+    return base + (base.indexOf("?") >= 0 ? "&" : "?") + qs.join("&");
+  }
 
   /* ---------- 工具 ---------- */
   function $(s, c) { return (c || document).querySelector(s); }
@@ -201,9 +231,11 @@
     posts: [],        // 合并后的文章
     local: loadLocal(),
     unlocked: sessionStorage.getItem(UNLOCK_KEY) === "1",
+    token: sessionStorage.getItem(TOKEN_KEY) || "",   // 网关签发的发布令牌
     activeId: null,
     keyword: "",
-    loadError: ""
+    loadError: "",
+    source: ""        // 文章来自哪儿："gateway" = 网关，"static" = 仓库快照
   };
 
   /* ---------- 迷你 markdown 渲染（先转义，后排版；XSS 安全） ---------- */
@@ -275,9 +307,11 @@
   /* ---------- DOM 引用 ---------- */
   var el = {
     count: $("#blogCount"),
+    status: $("#blogStatus"),
     search: $("#blogSearch"),
     unlock: $("#btnUnlock"),
     banner: $("#editBanner"),
+    editTools: $("#editTools"),
     list: $("#blogList"),
     reader: $("#blogReader"),
     pwModal: $("#pwModal"),
@@ -290,7 +324,19 @@
     edBody: $("#edBody"),
     edHeading: $("#edHeading"),
     edSave: $("#edSave"),
-    edCancel: $("#edCancel")
+    edPublish: $("#edPublish"),
+    edCancel: $("#edCancel"),
+    pubModal: $("#publishModal"),
+    pubHeading: $("#pubHeading"),
+    pubDesc: $("#pubDesc"),
+    pubImg: $("#pubCaptcha"),
+    pubAnswer: $("#pubAnswer"),
+    pubReload: $("#pubReload"),
+    pubPwField: $("#pubPwField"),
+    pubPassword: $("#pubPassword"),
+    pubError: $("#pubError"),
+    pubConfirm: $("#pubConfirm"),
+    pubCancel: $("#pubCancel")
   };
 
   /* ---------- 渲染：列表 ---------- */
@@ -320,12 +366,14 @@
           "</span>"
         : "";
       return (
-        '<button type="button" class="blog-item' + (p.id === state.activeId ? " on" : "") + '" data-id="' + esc(p.id) + '">' +
+        // 用 div 而不是 button：里面还要放「编辑 / 删除」两个按钮，
+        // button 套 button 会被 HTML 解析器提前闭合，外层按钮里的内容全丢
+        '<div class="blog-item' + (p.id === state.activeId ? " on" : "") + '" data-id="' + esc(p.id) + '" role="button" tabindex="0">' +
         '<span class="blog-item-date">' + esc(p.date) + "</span>" +
         '<span class="blog-item-title">' + esc(p.title) + "</span>" +
         (tags ? '<span class="blog-item-tags">' + tags + "</span>" : "") +
         ops +
-        "</button>"
+        "</div>"
       );
     }).join("");
     el.list.innerHTML = html;
@@ -365,6 +413,7 @@
       el.unlock.classList.toggle("btn-ghost", !state.unlocked);
     }
     if (el.banner) el.banner.hidden = !state.unlocked;
+    if (el.editTools) el.editTools.hidden = !state.unlocked;
   }
 
   /* ---------- 选择文章（hash 深链） ---------- */
@@ -392,6 +441,24 @@
   }
   function closePwModal() { el.pwModal.hidden = true; }
 
+  /* 用密码向网关换一个发布令牌：拿到之后发布/删除都不用再输密码。
+     网关不可达时不报错，只是发布时再要一次密码。 */
+  function requestToken(pw) {
+    return fetch(api("/api/publish/token"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pw })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        if (res.ok && res.data && res.data.token) {
+          state.token = res.data.token;
+          try { sessionStorage.setItem(TOKEN_KEY, state.token); } catch (e) {}
+        }
+      })
+      .catch(function () { /* 网关暂时不可达：发布时再问密码 */ });
+  }
+
   function tryUnlock() {
     var pw = el.pwInput.value;
     if (!pw) { el.pwError.hidden = false; return; }
@@ -407,6 +474,7 @@
         sessionStorage.setItem(UNLOCK_KEY, "1");
         closePwModal();
         render();
+        requestToken(pw);
         return;
       }
       el.pwError.hidden = false;
@@ -434,21 +502,32 @@
   }
   function closeEditor() { el.edModal.hidden = true; editingId = null; }
 
-  function saveEditor() {
+  // 从表单收集一篇文章
+  function collectPost() {
     var title = el.edTitle.value.trim();
-    var body = el.edBody.value;
-    if (!title) { el.edTitle.focus(); el.edTitle.classList.add("bad"); setTimeout(function () { el.edTitle.classList.remove("bad"); }, 900); return; }
-    var post = {
+    if (!title) {
+      el.edTitle.focus();
+      el.edTitle.classList.add("bad");
+      setTimeout(function () { el.edTitle.classList.remove("bad"); }, 900);
+      return null;
+    }
+    return {
       id: editingId || uid(),
       title: title,
       date: el.edDate.value || today(),
       tags: el.edTags.value.split(/[,，]/).map(function (s) { return s.trim(); }).filter(Boolean),
-      body: body
+      body: el.edBody.value
     };
+  }
+
+  // 存草稿：只写这台浏览器的 localStorage，不上线
+  function saveDraft() {
+    var post = collectPost();
+    if (!post) return;
     var local = state.local;
-    var fromBase = state.posts.some(function (p) { return p.id === post.id && !local.added.some(function (a) { return a.id === post.id; }); });
-    if (fromBase) {
-      local.edited[post.id] = post;        // 基线文章的改动
+    var inBase = basePostsCache.some(function (p) { return p.id === post.id; });
+    if (inBase) {
+      local.edited[post.id] = post;
     } else {
       var existed = false;
       local.added = local.added.map(function (a) { if (a.id === post.id) { existed = true; return post; } return a; });
@@ -460,36 +539,151 @@
     state.posts = mergePosts(basePostsCache, local);
     closeEditor();
     select(post.id, true);
+    flash("草稿存在这台浏览器里，点「发布上线」才推给所有访客");
+  }
+
+  // 发布成功后，这篇文章的本地草稿就没用了
+  function clearLocalDraft(id) {
+    var local = state.local;
+    local.added = local.added.filter(function (a) { return a.id !== id; });
+    delete local.edited[id];
+    local.deleted = local.deleted.filter(function (x) { return x !== id; });
+    saveLocal(local);
+    state.local = local;
   }
 
   function deletePost(id) {
     var p = null;
     state.posts.forEach(function (x) { if (x.id === id) p = x; });
     if (!p) return;
-    if (!confirm("删除「" + p.title + "」？\n\n这只删除这台浏览器里的改动；导出 posts.json 并推送后，线上才会生效。")) return;
-    var local = state.local;
-    local.added = local.added.filter(function (a) { return a.id !== id; });
-    delete local.edited[id];
-    if (local.deleted.indexOf(id) < 0) local.deleted.push(id);
-    saveLocal(local);
-    state.local = local;
-    state.posts = mergePosts(basePostsCache, local);
-    if (state.activeId === id) state.activeId = state.posts.length ? state.posts[0].id : null;
-    render();
+    if (!confirm("删除「" + p.title + "」？\n\n确认后还要过一次人机验证，删除后所有访客都看不到了。")) return;
+    openPublish("delete", p);
   }
 
-  /* ---------- 导出 posts.json ---------- */
-  function exportPosts() {
-    var payload = { posts: state.posts.map(function (p) {
-      return { id: p.id, title: p.title, date: p.date, tags: p.tags || [], body: p.body };
-    }) };
-    var blob = new Blob([JSON.stringify(payload, null, 2) + "\n"], { type: "application/json" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "posts.json";
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  /* ---------- 发布确认 ---------- */
+  var pubMode = "publish";     // publish | delete
+  var pendingPost = null;
+  var pubBusy = false;
+
+  function openPublish(mode, post) {
+    pubMode = mode;
+    pendingPost = post;
+    el.pubHeading.textContent = mode === "delete" ? "确认删除" : "发布上线";
+    el.pubDesc.textContent = mode === "delete"
+      ? "「" + post.title + "」会从线上消失，所有访客立刻看不到。"
+      : "「" + post.title + "」发布后所有访客立刻能看到。";
+    el.pubConfirm.textContent = mode === "delete" ? "确认删除" : "确认发布";
+    el.pubError.hidden = true;
+    el.pubError.textContent = "";
+    // 解锁时换到过令牌就不用再输密码
+    el.pubPwField.hidden = !!state.token;
+    if (el.pubPassword) el.pubPassword.value = "";
+    el.pubModal.hidden = false;
+    loadPubCaptcha();
+    setTimeout(function () { el.pubAnswer.focus(); }, 30);
+  }
+
+  function closePublish() {
+    el.pubModal.hidden = true;
+    pendingPost = null;
+    pubBusy = false;
+  }
+
+  function loadPubCaptcha() {
+    var id = "";
+    try {
+      var buf = new Uint8Array(16);
+      (window.crypto || window.msCrypto).getRandomValues(buf);
+      id = Array.prototype.map.call(buf, function (b) {
+        return ("0" + b.toString(16)).slice(-2);
+      }).join("");
+    } catch (e) {
+      for (var i = 0; i < 4; i++) id += Math.floor(Math.random() * 0xffffffff).toString(16);
+      id = id.slice(0, 32);
+    }
+    state.pubCaptchaId = id;
+    el.pubImg.crossOrigin = "anonymous";
+    el.pubImg.src = apiQ("/api/captcha", { id: id, t: Date.now() });
+    if (el.pubAnswer) el.pubAnswer.value = "";
+  }
+
+  function showPubError(msg) {
+    el.pubError.hidden = false;
+    el.pubError.textContent = msg;
+  }
+
+  function confirmPublish() {
+    if (pubBusy || !pendingPost) return;
+    var answer = el.pubAnswer.value.trim();
+    if (!answer) { showPubError("请填写验证码答案"); el.pubAnswer.focus(); return; }
+
+    var body = { captchaId: state.pubCaptchaId, captchaAnswer: answer };
+    if (state.token) {
+      body.token = state.token;
+    } else {
+      var pw = el.pubPassword.value;
+      if (!pw) { showPubError("请填写发布密码"); el.pubPassword.focus(); return; }
+      body.password = pw;
+    }
+    if (pubMode === "publish") body.post = pendingPost;
+    else body.id = pendingPost.id;
+
+    var mode = pubMode;
+    var postId = pendingPost.id;
+    pubBusy = true;
+    el.pubConfirm.disabled = true;
+    el.pubError.hidden = true;
+
+    fetch(api(mode === "publish" ? "/api/posts" : "/api/posts/delete"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    })
+      .then(function (r) {
+        return r.json().then(function (d) { return { status: r.status, data: d }; });
+      })
+      .then(function (res) {
+        if (res.status === 200 && res.data && res.data.ok) {
+          if (Array.isArray(res.data.posts)) {
+            basePostsCache = res.data.posts;
+            state.source = "gateway";
+          }
+          clearLocalDraft(postId);
+          state.posts = mergePosts(basePostsCache, state.local);
+          closePublish();
+          closeEditor();
+          if (!state.posts.some(function (p) { return p.id === state.activeId; })) {
+            state.activeId = state.posts.length ? state.posts[0].id : null;
+          }
+          select(state.activeId, false);
+          flash(mode === "publish" ? "已发布，所有访客都能看到了" : "已删除");
+          return;
+        }
+        var msg = (res.data && res.data.error) || "操作失败";
+        showPubError(msg);
+        loadPubCaptcha();
+      })
+      .catch(function () {
+        showPubError("网络错误，稍后再试");
+        loadPubCaptcha();
+      })
+      .then(function () {
+        pubBusy = false;
+        el.pubConfirm.disabled = false;
+      });
+  }
+
+  /* 顶部状态条 */
+  var flashTimer = null;
+  function flash(msg) {
+    if (!el.status) return;
+    el.status.textContent = msg;
+    el.status.classList.add("on");
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(function () {
+      flashTimer = null;
+      el.status.classList.remove("on");
+    }, 4500);
   }
 
   /* ---------- 事件绑定 ---------- */
@@ -512,6 +706,16 @@
       if (item) select(item.getAttribute("data-id"), true);
     });
 
+    // 列表键盘操作（列表项现在是 div，得自己处理回车 / 空格）
+    el.list.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (e.target.closest(".blog-op")) return;
+      var item = e.target.closest(".blog-item");
+      if (!item) return;
+      e.preventDefault();
+      select(item.getAttribute("data-id"), true);
+    });
+
     // 阅读区里的「编辑此篇」
     el.reader.addEventListener("click", function (e) {
       var op = e.target.closest('[data-act="edit"]');
@@ -531,7 +735,8 @@
     el.unlock.addEventListener("click", function () {
       if (state.unlocked) {
         state.unlocked = false;
-        sessionStorage.removeItem(UNLOCK_KEY);
+        state.token = "";
+        try { sessionStorage.removeItem(UNLOCK_KEY); sessionStorage.removeItem(TOKEN_KEY); } catch (e) {}
         render();
       } else {
         openPwModal();
@@ -547,17 +752,31 @@
     el.pwModal.addEventListener("click", function (e) { if (e.target === el.pwModal) closePwModal(); });
 
     // 编辑模态
-    el.edSave.addEventListener("click", saveEditor);
+    el.edSave.addEventListener("click", saveDraft);
+    el.edPublish.addEventListener("click", function () {
+      var post = collectPost();
+      if (!post) return;
+      openPublish("publish", post);
+    });
     el.edCancel.addEventListener("click", closeEditor);
     el.edModal.addEventListener("click", function (e) { if (e.target === el.edModal) closeEditor(); });
 
-    // 工具栏：新建 / 导出
+    // 发布确认模态
+    el.pubCancel.addEventListener("click", closePublish);
+    el.pubConfirm.addEventListener("click", confirmPublish);
+    el.pubModal.addEventListener("click", function (e) { if (e.target === el.pubModal) closePublish(); });
+    el.pubReload.addEventListener("click", function () { loadPubCaptcha(); el.pubAnswer.focus(); });
+    el.pubImg.addEventListener("click", function () { loadPubCaptcha(); });
+    el.pubAnswer.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); confirmPublish(); }
+    });
+
+    // 工具栏：新建
     $("#btnNew").addEventListener("click", function () { openEditor(null); });
-    $("#btnExport").addEventListener("click", exportPosts);
 
     // Esc 关模态
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") { closePwModal(); closeEditor(); }
+      if (e.key === "Escape") { closePwModal(); closeEditor(); closePublish(); }
     });
 
     // hash 变化（前进/后退）
@@ -569,25 +788,57 @@
 
   /* ---------- 启动 ---------- */
   var basePostsCache = [];
+
+  // 线上正式文章：网关的文章库
+  function fetchGatewayPosts() {
+    return fetch(apiQ("/api/posts", { t: Date.now() }), { cache: "no-cache" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        if (!d || !Array.isArray(d.posts) || !d.posts.length) throw new Error("empty");
+        return d.posts;
+      });
+  }
+
+  // 网关不可用时的退路：仓库里的快照
+  function fetchStaticPosts() {
+    return fetch(DATA_URL, { cache: "no-cache" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) { return (data && data.posts) || []; });
+  }
+
   function boot() {
-    fetch(DATA_URL, { cache: "no-cache" }).then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    }).then(function (data) {
-      basePostsCache = (data && data.posts) || [];
-      state.posts = mergePosts(basePostsCache, state.local);
-      var initial = location.hash.replace(/^#/, "");
-      state.activeId = (initial && state.posts.some(function (p) { return p.id === initial; }))
-        ? initial
-        : (state.posts.length ? state.posts[0].id : null);
-      bind();
-      render();
-      mountComments(state.activeId);
-    }).catch(function (err) {
-      state.loadError = String(err && err.message || err);
-      el.list.innerHTML = '<p class="blog-empty">文章数据加载失败：' + esc(state.loadError) + "<br>（通过 file:// 直接打开时浏览器会拦截数据请求，请用本地服务器或线上访问。）</p>";
-      el.reader.innerHTML = '<div class="blog-reader-empty"><p>数据没加载上，文章暂时看不了。</p></div>';
-    });
+    fetchGatewayPosts()
+      .then(function (posts) {
+        basePostsCache = posts;
+        state.source = "gateway";
+      })
+      .catch(function () {
+        return fetchStaticPosts().then(function (posts) {
+          basePostsCache = posts;
+          state.source = "static";
+        });
+      })
+      .then(function () {
+        state.posts = mergePosts(basePostsCache, state.local);
+        var initial = location.hash.replace(/^#/, "");
+        state.activeId = (initial && state.posts.some(function (p) { return p.id === initial; }))
+          ? initial
+          : (state.posts.length ? state.posts[0].id : null);
+        bind();
+        render();
+        mountComments(state.activeId);
+      })
+      .catch(function (err) {
+        state.loadError = String(err && err.message || err);
+        el.list.innerHTML = '<p class="blog-empty">文章数据加载失败：' + esc(state.loadError) + "<br>（网关和仓库快照都没读到。检查一下网络，或用本地服务器打开。）</p>";
+        el.reader.innerHTML = '<div class="blog-reader-empty"><p>数据没加载上，文章暂时看不了。</p></div>';
+      });
   }
 
   if (document.readyState === "loading") {
