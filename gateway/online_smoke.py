@@ -217,8 +217,15 @@ def solve(raw):
     return "".join(c for c, _ in chars), chars
 
 
+def delete_comment(cid, delkey):
+    """用提交时返回的删除码删掉评论（明文只回一次，丢了就删不掉）"""
+    st, body, _ = req("/api/comments/delete", {"id": cid, "delKey": delkey})
+    return st, body
+
+
 def main():
     ok = True
+    created = []  # (id, delKey) —— 删除码明文只回一次，必须当场记下
 
     print("=== 1. 健康检查 ===")
     st, body, _ = req("/api/health")
@@ -250,6 +257,11 @@ def main():
     })
     print(" ", st, body.decode()[:300])
     ok = ok and st == 200
+    try:
+        c = json.loads(body.decode())["comment"]
+        created.append((c["id"], json.loads(body.decode())["delKey"]))
+    except Exception:
+        pass
 
     print("=== 5. 读取评论 ===")
     st, body, _ = req("/api/comments?post=p1")
@@ -269,14 +281,41 @@ def main():
         })
         codes.append(s3)
         print(f"  第{i+1}次 -> {s3} {b3.decode()[:120]}")
+        try:
+            j = json.loads(b3.decode())
+            created.append((j["comment"]["id"], j["delKey"]))
+        except Exception:
+            pass
         time.sleep(0.4)
     if 429 in codes:
         print("  ✓ 限流生效")
     else:
         print("  ! 未触发 429（可能被前面消耗了额度）")
 
-    print("=== 7. 清理测试评论（本地文件不可远程清，改为记录）===")
-    print("  测试评论保留在线上，可在管理台清空")
+    print("=== 7. 清理测试评论 ===")
+    # 删除接口也走评论限流（10 秒 2 次），逐条删并间隔重试
+    for i, (cid3, key) in enumerate(created):
+        for attempt in range(6):
+            st, body = delete_comment(cid3, key)
+            if st == 200:
+                print(f"  已删除 {cid3}")
+                break
+            if st == 429:
+                time.sleep(5.5)
+                continue
+            print(f"  !! 删除 {cid3} 失败：{st} {body.decode()[:120]}")
+            break
+        else:
+            print(f"  !! 删除 {cid3} 重试耗尽")
+        time.sleep(0.6)
+
+    st, body, _ = req("/api/comments?post=p1")
+    try:
+        left = len(json.loads(body.decode()).get("comments", []))
+    except Exception:
+        left = -1
+    print("  剩余测试评论:", left)
+    ok = ok and left == 0
 
     return ok
 
