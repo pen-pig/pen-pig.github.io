@@ -28,8 +28,8 @@
   };
 
   /* 网关地址：线上是独立域名，与 GitHub Pages 不同源（走 CORS）。
-     "?local=1" 强制走本地网关（联调用）。 */
-  var LOCAL_GATEWAY = "http://127.0.0.1:8791";
+     "?local=1" 强制走本地网关（联调用），"?gw=8799" 指定本地端口。 */
+  var LOCAL_GATEWAY = "http://127.0.0.1:" + ((location.search.match(/[?&]gw=(\d+)/) || [])[1] || "8791");
   var SHARE_CODE = "OBVHYSCDUX";
   var GATEWAY = (location.search.indexOf("local=1") >= 0)
     ? LOCAL_GATEWAY

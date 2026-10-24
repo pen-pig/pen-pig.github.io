@@ -116,6 +116,7 @@ function publicComment(c) {
     floor: typeof c.floor === "number" ? c.floor : 0,
     replyTo: typeof c.replyTo === "number" ? c.replyTo : 0,
     replyToNick: c.replyToNick || "",
+    pinned: !!c.pinned,
     image: c.image || ""
   };
 }
@@ -166,6 +167,23 @@ function deleteCommentById(id) {
     if (removed) writeFileAtomic(rest);
   });
   return writeChain.then(function () { return removed; });
+}
+
+// 后台改评论的字段（目前只有置顶）。命中返回改后的评论。
+function updateComment(id, patch) {
+  var updated = null;
+  writeChain = writeChain.then(async () => {
+    var arr = localAll();
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i] && arr[i].id === id) {
+        if (patch && typeof patch.pinned === "boolean") arr[i].pinned = patch.pinned;
+        updated = arr[i];
+        break;
+      }
+    }
+    if (updated) writeFileAtomic(arr);
+  });
+  return writeChain.then(function () { return updated; });
 }
 
 /* ---------------- 图形验证码 ----------------
@@ -527,6 +545,9 @@ const PUBLISH_AUTH = {
 const POSTS_FILE = path.join(__dirname, "data", "posts.json");
 const TOKEN_FILE = path.join(__dirname, "data", "tokens.json");
 const PUBLISH_RATE_FILE = path.join(__dirname, "data", "ratelimit-publish.json");
+const SITE_FILE = path.join(__dirname, "data", "site.json");
+const AUTH_FILE = path.join(__dirname, "data", "publish-auth.json");
+const ADMIN_RATE_FILE = path.join(__dirname, "data", "ratelimit-admin.json");
 
 const TOKEN_TTL_MS = 2 * 60 * 60 * 1000;      // 发布令牌 2 小时
 const MAX_POST_TITLE = 120;
@@ -538,6 +559,12 @@ const PUB_WINDOW_MS = parseInt(process.env.PUB_WINDOW_MS || String(10 * 1000), 1
 const PUB_WINDOW_MAX = parseInt(process.env.PUB_WINDOW_MAX || "6", 10);
 const PUB_HOUR_MS = parseInt(process.env.PUB_HOUR_MS || String(60 * 60 * 1000), 10);
 const PUB_HOUR_MAX = parseInt(process.env.PUB_HOUR_MAX || "60", 10);
+
+// 后台操作的限流单独一张表，别跟博客发布抢配额
+const ADMIN_WINDOW_MS = parseInt(process.env.ADMIN_WINDOW_MS || String(10 * 1000), 10);
+const ADMIN_WINDOW_MAX = parseInt(process.env.ADMIN_WINDOW_MAX || "30", 10);
+const ADMIN_HOUR_MS = parseInt(process.env.ADMIN_HOUR_MS || String(60 * 60 * 1000), 10);
+const ADMIN_HOUR_MAX = parseInt(process.env.ADMIN_HOUR_MAX || "300", 10);
 
 function sha256Buf(buf) {
   return require("crypto").createHash("sha256").update(buf).digest();
@@ -574,8 +601,13 @@ function safeEqualStr(a, b) {
   return diff === 0;
 }
 
-// 发布密码的参数：gateway/secrets.json 优先，其次环境变量，最后用内置默认
+// 发布密码的参数：data/publish-auth.json（后台改密写这里）优先，
+// 其次 gateway/secrets.json，再次环境变量，最后用内置默认
 function publishAuth() {
+  try {
+    const obj = JSON.parse(fs.readFileSync(AUTH_FILE, "utf8"));
+    if (obj && obj.hash && obj.salt) return obj;
+  } catch (e) { /* 没有就用下面的 */ }
   try {
     const raw = fs.readFileSync(path.join(__dirname, "secrets.json"), "utf8");
     const s = JSON.parse(raw);
@@ -704,6 +736,170 @@ async function seedPosts() {
   } catch (e) {
     console.warn("[gateway] 种子文章拉取失败（不影响使用）：" + e.message);
   }
+}
+
+/* ---------------- 站点文案 ----------------
+   index.html 里的文案本来写死在 HTML 里（静态优先：网关不可用时页面照样完整可读）。
+   data/site.json 存的是「覆盖值」：后台改完写进来，前端 assets/js/site.js 拉下来
+   覆盖到对应 DOM；某一项没有覆盖值，就继续用 HTML 里的原文。
+
+   字段表是唯一真相源：后台表单按它渲染，首页按它找 DOM 元素。
+   要新增一项可改文案：先在 index.html 里给元素加 id，再在这里加一条。
+------------------------------------------------ */
+
+const SITE_GROUPS = {
+  hero: "首页 HERO",
+  about: "关于 ABOUT",
+  projects: "项目 PROJECTS",
+  oi: "竞赛 COMPETITION",
+  contact: "联系 CONTACT",
+  extra: "其它 MISC"
+};
+
+// mode: text = 纯文本；lines = 多行（每行一条）；items = 多项（横向排列）
+// type:  text = 单行输入；textarea = 多行输入；url = 链接（只放行 http/https）
+// attr:  有值就改这个属性（href），而不是改元素文字
+const SITE_FIELDS = {
+  "hero.name":           { group: "hero", label: "显示名", sel: "heroName", max: 40 },
+  "hero.role":           { group: "hero", label: "一句话身份", sel: "heroRole", max: 60 },
+  "hero.bio":            { group: "hero", label: "简介", sel: "heroBio", max: 240, type: "textarea" },
+  "hero.meta.status":    { group: "hero", label: "状态", sel: "heroMetaStatus", max: 20 },
+  "hero.meta.location":  { group: "hero", label: "所在地", sel: "heroMetaLocation", max: 30 },
+  "hero.meta.currently": { group: "hero", label: "正在做的事", sel: "heroMetaCurrently", max: 40 },
+  "hero.cta.luogu":      { group: "hero", label: "洛谷按钮文字", sel: "heroCtaLuogu", max: 40 },
+
+  "boot.log":            { group: "hero", label: "启动日志", sel: "bootLog", mode: "lines", max: 120, limit: 20 },
+  "ticker.items":        { group: "hero", label: "滚动横幅", sel: "tickerTrack", mode: "items", max: 40, limit: 16 },
+
+  "about.lead":          { group: "about", label: "开头一句", sel: "aboutLead", max: 140, type: "textarea" },
+  "about.p1":            { group: "about", label: "第一段", sel: "aboutP1", max: 320, type: "textarea" },
+  "about.p2":            { group: "about", label: "第二段", sel: "aboutP2", max: 320, type: "textarea" },
+
+  "proj1.name":          { group: "projects", label: "项目 1 · 名称", sel: "proj1Name", max: 40 },
+  "proj1.tagline":       { group: "projects", label: "项目 1 · 标语", sel: "proj1Tagline", max: 60 },
+  "proj1.desc":          { group: "projects", label: "项目 1 · 描述", sel: "proj1Desc", max: 320, type: "textarea" },
+  "proj1.link":          { group: "projects", label: "项目 1 · 仓库链接", sel: "proj1Link", max: 200, type: "url", attr: "href" },
+  "proj2.name":          { group: "projects", label: "项目 2 · 名称", sel: "proj2Name", max: 40 },
+  "proj2.tagline":       { group: "projects", label: "项目 2 · 标语", sel: "proj2Tagline", max: 60 },
+  "proj2.desc":          { group: "projects", label: "项目 2 · 描述", sel: "proj2Desc", max: 320, type: "textarea" },
+  "proj2.link":          { group: "projects", label: "项目 2 · 仓库链接", sel: "proj2Link", max: 200, type: "url", attr: "href" },
+  "proj3.name":          { group: "projects", label: "项目 3 · 名称", sel: "proj3Name", max: 40 },
+  "proj3.tagline":       { group: "projects", label: "项目 3 · 标语", sel: "proj3Tagline", max: 60 },
+  "proj3.desc":          { group: "projects", label: "项目 3 · 描述", sel: "proj3Desc", max: 320, type: "textarea" },
+  "proj3.link":          { group: "projects", label: "项目 3 · 仓库链接", sel: "proj3Link", max: 200, type: "url", attr: "href" },
+
+  "oi.uid":              { group: "oi", label: "洛谷 UID", sel: "oiUid", max: 20 },
+  "oi.user":             { group: "oi", label: "洛谷用户名", sel: "oiUser", max: 40 },
+  "oi.platform":         { group: "oi", label: "平台域名", sel: "oiPlatform", max: 40 },
+  "oi.status":           { group: "oi", label: "状态", sel: "oiStatus", max: 20 },
+
+  "contact1.kicker":     { group: "contact", label: "联系 1 · 标签", sel: "contact1Kicker", max: 30 },
+  "contact1.main":       { group: "contact", label: "联系 1 · 主文案", sel: "contact1Main", max: 60 },
+  "contact1.note":       { group: "contact", label: "联系 1 · 备注", sel: "contact1Note", max: 60 },
+  "contact1.href":       { group: "contact", label: "联系 1 · 链接", sel: "contact1Href", max: 200, type: "url", attr: "href" },
+  "contact2.kicker":     { group: "contact", label: "联系 2 · 标签", sel: "contact2Kicker", max: 30 },
+  "contact2.main":       { group: "contact", label: "联系 2 · 主文案", sel: "contact2Main", max: 60 },
+  "contact2.note":       { group: "contact", label: "联系 2 · 备注", sel: "contact2Note", max: 60 },
+  "contact2.href":       { group: "contact", label: "联系 2 · 链接", sel: "contact2Href", max: 200, type: "url", attr: "href" },
+
+  "footer.note":          { group: "extra", label: "页脚文字", sel: "footerNote", max: 80 }
+};
+
+function readSite() {
+  try {
+    const obj = JSON.parse(fs.readFileSync(SITE_FILE, "utf8"));
+    if (obj && obj.values && typeof obj.values === "object") {
+      return { values: obj.values, updatedAt: obj.updatedAt || 0 };
+    }
+  } catch (e) { /* 没有就用空 */ }
+  return { values: {}, updatedAt: 0 };
+}
+
+// 只保留字段表里有的 key，丢掉别人塞进来的杂项
+function pruneSite(values) {
+  const out = {};
+  if (!values || typeof values !== "object") return out;
+  for (const key of Object.keys(SITE_FIELDS)) {
+    if (Object.prototype.hasOwnProperty.call(values, key)) out[key] = values[key];
+  }
+  return out;
+}
+
+// 链接只放行 http/https，避免 javascript: 之类
+function safeUrl(v) {
+  const s = String(v || "").trim();
+  if (!/^https?:\/\//i.test(s)) return "";
+  if (/[\s<>"']/.test(s)) return "";
+  return s;
+}
+
+// 前端提交的值过一遍白名单和长度限制
+function sanitizeSite(input) {
+  const out = {};
+  const src = (input && typeof input === "object") ? input : {};
+  for (const key of Object.keys(SITE_FIELDS)) {
+    if (!Object.prototype.hasOwnProperty.call(src, key)) continue;
+    const def = SITE_FIELDS[key];
+    const raw = src[key];
+
+    if (def.mode === "lines" || def.mode === "items") {
+      if (!Array.isArray(raw)) { out[key] = []; continue; }
+      const arr = [];
+      for (const v of raw) {
+        const line = clean(v, def.max);
+        if (line) arr.push(line);
+        if (arr.length >= (def.limit || 20)) break;
+      }
+      out[key] = arr;
+      continue;
+    }
+
+    if (def.type === "url") {
+      out[key] = safeUrl(raw);
+      continue;
+    }
+
+    out[key] = clean(raw, def.max);
+  }
+  return out;
+}
+
+// 空串 = 清除覆盖，回到 HTML 原文
+function mergeSite(prev, next) {
+  const merged = Object.assign({}, prev);
+  for (const key of Object.keys(next)) {
+    const v = next[key];
+    if (v === "" || v === null || v === undefined || (Array.isArray(v) && !v.length)) delete merged[key];
+    else merged[key] = v;
+  }
+  return merged;
+}
+
+/* ---------------- 后台：改发布密码 ----------------
+   网关自己算哈希，明文不落盘、不回传。改完写 data/publish-auth.json，
+   这个文件在 publishAuth() 里优先级最高。
+------------------------------------------------ */
+
+const MIN_PW_LEN = 8;
+
+function writePublishAuth(auth) {
+  writeFileAtomicTo(AUTH_FILE, {
+    alg: "sha256-iter",
+    iterations: auth.iterations,
+    salt: auth.salt,
+    hash: auth.hash,
+    updatedAt: Date.now()
+  });
+}
+
+function makePublishAuth(password) {
+  const salt = require("crypto").randomBytes(16).toString("hex");
+  const iterations = 10000;
+  return {
+    iterations: iterations,
+    salt: salt,
+    hash: hashPasswordIter(password, salt, iterations)
+  };
 }
 
 /* ---------------- HTTP 服务 ---------------- */
@@ -1058,6 +1254,179 @@ const server = http.createServer(async (req, res) => {
     }
     writePosts(sortPosts(rest));
     json(res, 200, { ok: true, id: id, posts: sortPosts(rest) });
+    return;
+  }
+
+  /* ---- 站点文案 ---- */
+
+  // 读站点文案覆盖值：首页要用，后台表单也要用，所以把字段表一起带回去
+  if (path_ === "/api/site" && req.method === "GET") {
+    const site = readSite();
+    json(res, 200, {
+      ok: true,
+      values: pruneSite(site.values),
+      fields: SITE_FIELDS,
+      groups: SITE_GROUPS,
+      updatedAt: site.updatedAt
+    });
+    return;
+  }
+
+  // 写站点文案：只有拿令牌（或直接给密码）的人能改
+  if (path_ === "/api/site" && req.method === "POST") {
+    const ip = clientIp(req);
+    let payload;
+    try {
+      payload = JSON.parse(await readBody(req) || "{}");
+    } catch (e) {
+      json(res, 400, { error: "请求格式不对" });
+      return;
+    }
+    const rate = checkRateTable(ip, ADMIN_RATE_FILE, ADMIN_WINDOW_MS, ADMIN_WINDOW_MAX, ADMIN_HOUR_MS, ADMIN_HOUR_MAX);
+    if (!rate.ok) {
+      json(res, rate.code, { error: rate.msg, retryAfter: rate.wait }, { "Retry-After": String(rate.wait) });
+      return;
+    }
+    if (!authorizePublish(payload)) {
+      json(res, 403, { error: "密码不对，或令牌已过期" });
+      return;
+    }
+    const site = readSite();
+    const next = mergeSite(pruneSite(site.values), sanitizeSite(payload.values || payload.site || {}));
+    writeFileAtomicTo(SITE_FILE, { values: next, updatedAt: Date.now() });
+    json(res, 200, { ok: true, values: next, updatedAt: Date.now() });
+    return;
+  }
+
+  // 当前生效的发布密码参数：改过密码之后前端要跟着变，不能再死用源码里那份
+  if (path_ === "/api/publish/auth" && req.method === "GET") {
+    const auth = publishAuth();
+    json(res, 200, {
+      ok: true,
+      alg: "sha256-iter",
+      iterations: parseInt(auth.iterations || 10000, 10),
+      salt: auth.salt || "",
+      hash: auth.hash || ""
+    });
+    return;
+  }
+
+  /* ---- 后台：评论管理 ---- */
+
+  // 所有文章的评论总览
+  if (path_ === "/api/admin/comments" && req.method === "GET") {
+    const payload = {
+      token: clean(url.searchParams.get("token") || req.headers["x-admin-token"] || "", 64),
+      password: clean(url.searchParams.get("password") || "", 200)
+    };
+    if (!authorizePublish(payload)) {
+      json(res, 403, { error: "密码不对，或令牌已过期" });
+      return;
+    }
+    try {
+      const list = localAll();
+      list.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+      json(res, 200, { ok: true, comments: list.map(publicComment), count: list.length });
+    } catch (e) {
+      json(res, 500, { error: "读取评论失败：" + e.message });
+    }
+    return;
+  }
+
+  // 后台删评论：不需要删除码，凭令牌即可
+  if (path_ === "/api/admin/comments/delete" && req.method === "POST") {
+    const ip = clientIp(req);
+    let payload;
+    try {
+      payload = JSON.parse(await readBody(req) || "{}");
+    } catch (e) {
+      json(res, 400, { error: "请求格式不对" });
+      return;
+    }
+    const rate = checkRateTable(ip, ADMIN_RATE_FILE, ADMIN_WINDOW_MS, ADMIN_WINDOW_MAX, ADMIN_HOUR_MS, ADMIN_HOUR_MAX);
+    if (!rate.ok) {
+      json(res, rate.code, { error: rate.msg, retryAfter: rate.wait }, { "Retry-After": String(rate.wait) });
+      return;
+    }
+    if (!authorizePublish(payload)) {
+      json(res, 403, { error: "密码不对，或令牌已过期" });
+      return;
+    }
+    const cid = clean(payload.id || "", 32);
+    if (!cid) { json(res, 400, { error: "缺少评论标识" }); return; }
+    const removed = await deleteCommentById(cid);
+    if (!removed) { json(res, 404, { error: "评论不存在或已被删除" }); return; }
+    if (removed.image) removeImage(removed.image);
+    json(res, 200, { ok: true, id: cid });
+    return;
+  }
+
+  // 置顶 / 取消置顶
+  if (path_ === "/api/admin/comments/pin" && req.method === "POST") {
+    const ip = clientIp(req);
+    let payload;
+    try {
+      payload = JSON.parse(await readBody(req) || "{}");
+    } catch (e) {
+      json(res, 400, { error: "请求格式不对" });
+      return;
+    }
+    const rate = checkRateTable(ip, ADMIN_RATE_FILE, ADMIN_WINDOW_MS, ADMIN_WINDOW_MAX, ADMIN_HOUR_MS, ADMIN_HOUR_MAX);
+    if (!rate.ok) {
+      json(res, rate.code, { error: rate.msg, retryAfter: rate.wait }, { "Retry-After": String(rate.wait) });
+      return;
+    }
+    if (!authorizePublish(payload)) {
+      json(res, 403, { error: "密码不对，或令牌已过期" });
+      return;
+    }
+    const cid = clean(payload.id || "", 32);
+    const pinned = payload.pinned ? true : false;
+    if (!cid) { json(res, 400, { error: "缺少评论标识" }); return; }
+    const updated = await updateComment(cid, { pinned: pinned });
+    if (!updated) { json(res, 404, { error: "评论不存在" }); return; }
+    json(res, 200, { ok: true, comment: publicComment(updated) });
+    return;
+  }
+
+  /* ---- 后台：改发布密码 ---- */
+  // 要旧密码 + 验证码，双保险。改完明文不落盘，只留盐和哈希。
+  if (path_ === "/api/admin/password" && req.method === "POST") {
+    const ip = clientIp(req);
+    let payload;
+    try {
+      payload = JSON.parse(await readBody(req) || "{}");
+    } catch (e) {
+      json(res, 400, { error: "请求格式不对" });
+      return;
+    }
+    const rate = checkRateTable(ip, ADMIN_RATE_FILE, ADMIN_WINDOW_MS, ADMIN_WINDOW_MAX, ADMIN_HOUR_MS, ADMIN_HOUR_MAX);
+    if (!rate.ok) {
+      json(res, rate.code, { error: rate.msg, retryAfter: rate.wait }, { "Retry-After": String(rate.wait) });
+      return;
+    }
+    if (!authorizePublish(payload)) {
+      json(res, 403, { error: "密码不对，或令牌已过期" });
+      return;
+    }
+    const oldPw = String(payload.oldPassword == null ? "" : payload.oldPassword);
+    const newPw = String(payload.newPassword == null ? "" : payload.newPassword);
+    if (!checkPublishPassword(oldPw)) {
+      json(res, 403, { error: "当前密码不对" });
+      return;
+    }
+    if (normalizePassword(newPw).length < MIN_PW_LEN) {
+      json(res, 400, { error: "新密码至少 " + MIN_PW_LEN + " 位" });
+      return;
+    }
+    const cap = verifyCaptcha(clean(payload.captchaId || "", 64), clean(payload.captchaAnswer || "", 16));
+    if (!cap.ok) {
+      json(res, 400, { error: cap.error, needCaptcha: true });
+      return;
+    }
+    const auth = makePublishAuth(newPw);
+    writePublishAuth(auth);
+    json(res, 200, { ok: true, iterations: auth.iterations });
     return;
   }
 
