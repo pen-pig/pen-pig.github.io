@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pen-pig 的个人主页</title>
-  <meta name="description" content="pen-pig 的个人主页：操作系统实验、小工具与踩坑记录。项目代码由 AI 生成，我负责需求、设计与验证。">
+  <meta name="description" content="pen-pig 的个人主页：操作系统实验、小工具与踩坑记录。项目代码由 AI 生成。">
   <meta property="og:title" content="pen-pig 的个人主页">
-  <meta property="og:description" content="系统与小工具，代码由 AI 生成，我负责设计与验证。这里收着项目、思路和踩坑记录。">
+  <meta property="og:description" content="系统与小工具，项目、演示和踩坑记录都放在这里。项目代码由 AI 生成。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://pen-pig.github.io/">
   <meta name="theme-color" content="#06080c">
@@ -45,8 +45,8 @@
         <div class="hero-id">
           <p class="tape"><span>PERSONAL HOMEPAGE</span><span class="tape-dim">// WORKLOG</span></p>
           <h1 class="hero-name"><span id="heroName">pen-pig</span><span class="caret" aria-hidden="true"></span></h1>
-          <p class="hero-role" id="heroRole">写工具 · 拆系统 · 记踩坑</p>
-          <p class="hero-bio" id="heroBio">平时写点小工具、拆系统，在 AI 的协助下维护几个项目：代码由它生成，需求、设计和验证由我做。这里收着项目、思路和踩坑记录，算是一块数字自留地。</p>
+          <p class="hero-role" id="heroRole">系统实验 · 小工具 · 踩坑记录</p>
+          <p class="hero-bio" id="heroBio">这里放几个做过的项目，还有调试笔记。点开卡片能看说明，也能在浏览器里直接试。</p>
           <div class="hero-cta">
             <a class="btn btn-primary" href="#projects">查看项目<i aria-hidden="true">→</i></a>
             <a class="btn btn-ghost" href="blog.html" id="heroCtaNotes">读点笔记</a>
@@ -67,10 +67,10 @@
             </div>
             <div class="term-body" id="bootLog">
               <p><span class="t">[    0.000000]</span> booting pen-pig.homepage ...</p>
-              <p><span class="t">[    0.004182]</span> loading: curiosity, code, coffee</p>
-              <p><span class="t">[    0.118937]</span> mounting /projects /notes /memories</p>
+              <p><span class="t">[    0.004182]</span> loading: projects, notes, drafts</p>
+              <p><span class="t">[    0.118937]</span> mounting /projects /notes</p>
               <p><span class="t">[    1.033204]</span> net: static assets ready</p>
-              <p class="ok"><span class="t">[    3.000000]</span> login: pen-pig — welcome home ✓</p>
+              <p class="ok"><span class="t">[    3.000000]</span> done: static site ready ✓</p>
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@
     <!-- ============ TICKER ============ -->
     <div class="ticker" aria-hidden="true">
       <div class="ticker-track" id="tickerTrack">
-        <span>HELLO WORLD</span><b>//</b><span>SYSTEMS &amp; TOOLS</span><b>//</b><span>CODE BY AI — VERIFIED BY ME</span><b>//</b><span>LEARNING BY BUILDING</span><b>//</b><span>NOTES &amp; PITFALLS</span><b>//</b><span>MADE WITH CURIOSITY</span><b>//</b>
+        <span>OS EXPERIMENT</span><b>//</b><span>C · C++ · WEB</span><b>//</b><span>BROWSER DEMOS</span><b>//</b><span>NOTES &amp; PITFALLS</span><b>//</b><span>STATIC SITE</span><b>//</b>
       </div>
     </div>
 
@@ -91,7 +91,7 @@
       <header class="sec-head reveal">
         <span class="sec-index">// 01</span>
         <h2>关于</h2>
-        <p class="sec-sub">ABOUT — the human behind the project</p>
+        <p class="sec-sub">ABOUT — what's on this site</p>
       </header>
       <div class="about-grid">
         <aside class="about-index reveal" aria-label="站内索引">
@@ -105,8 +105,8 @@
         </aside>
         <div class="about-text reveal">
           <p class="lead" id="aboutLead">你好，我是 <strong>pen-pig</strong>，这里放的是我做过的东西和踩过的坑。</p>
-          <p id="aboutP1">平时在 AI 的协助下做过一些小东西：一个叫 CeruliaOS 的操作系统实验项目、一个用 PHP 写的网站、几个小工具。代码由 AI 生成，我负责提需求、做设计、调试和验证——也顺便弄懂了它们背后的原理。</p>
-          <p id="aboutP2">我相信理解一个系统最好的方式，是深入它的每一层。这里收录我的项目、代码和踩坑记录，当作自己的数字自留地。</p>
+          <p id="aboutP1">做过几个小项目：CeruliaOS（操作系统实验）、一个 PHP 网站、一个校内 OJ 的爬虫。代码由 AI 生成，我负责提需求、调试和验证。</p>
+          <p id="aboutP2">笔记主要写实现思路和踩过的坑，方便以后回查。三个项目都做了能在浏览器里直接试的演示页，不用装环境。页面本身是静态的，文章和留言走一个独立的小网关，依赖少，出问题好排查。</p>
         </div>
       </div>
     </section>
@@ -116,14 +116,14 @@
       <header class="sec-head reveal">
         <span class="sec-index">// 02</span>
         <h2>项目</h2>
-        <p class="sec-sub">PROJECTS — built with AI, verified by me</p>
+        <p class="sec-sub">PROJECTS — three demos you can try</p>
       </header>
 
       <div class="proj-row">
         <article class="proj panel reveal">
           <h3 class="proj-name" id="proj1Name">CeruliaOS</h3>
           <p class="proj-tagline" id="proj1Tagline">操作系统实验项目</p>
-          <p class="proj-desc" id="proj1Desc">从 bootloader 到图形桌面都折腾过一遍的操作系统小项目。代码由 AI 生成，我负责设计与验证。</p>
+          <p class="proj-desc" id="proj1Desc">从 bootloader 到图形桌面的操作系统实验，引导链和内核各跑过一遍，网页里可以直接启动。</p>
           <div class="proj-tags">
             <span>C</span><span>x86 Assembly</span><span>QEMU</span>
             <span class="chip chip-ai">AI 生成</span>
@@ -139,7 +139,7 @@
         <article class="proj panel reveal">
           <h3 class="proj-name" id="proj2Name">website</h3>
           <p class="proj-tagline" id="proj2Tagline">PHP 网站</p>
-          <p class="proj-desc" id="proj2Desc">PHP 5.6+ 兼容 + JSON 文件存储（无数据库）+ Bootstrap UI。已上线 OJ、注册、头像、签到、网盘等模块，管理后台另有成员搜索与数据备份。代码由 AI 生成，我负责需求与维护。</p>
+          <p class="proj-desc" id="proj2Desc">PHP 5.6+ 兼容 + JSON 文件存储（无数据库）+ Bootstrap UI。已上线 OJ、注册、头像、签到、网盘等模块，管理后台另有成员搜索与数据备份。</p>
           <div class="proj-tags">
             <span>PHP</span><span>JSON</span><span>Bootstrap</span>
             <span class="chip chip-ai">AI 生成</span>
@@ -155,7 +155,7 @@
         <article class="proj panel reveal">
           <h3 class="proj-name" id="proj3Name">oj-clawler</h3>
           <p class="proj-tagline" id="proj3Tagline">校内 OJ 数据爬虫</p>
-          <p class="proj-desc" id="proj3Desc">校内 OJ 的榜单和提交记录一页只露一小截，这个爬虫把它们抓下来整理成可排序的总表。C++ 编写，代码由 AI 生成，我负责需求与验证。</p>
+          <p class="proj-desc" id="proj3Desc">校内 OJ 的榜单和提交记录一页只露一小截，爬虫把它们抓下来整理成可排序的总表，支持 CSV、JSON 导出。</p>
           <div class="proj-tags">
             <span>C++</span>
             <span class="chip chip-ai">AI 生成</span>
@@ -196,9 +196,9 @@
           </div>
         </div>
         <div class="oi-text reveal">
-          <p id="oiText1">算法是另一座需要从头理解的系统：把一个庞大问题拆成可验证的小步骤，再用测试证明它正确。</p>
-          <p id="oiText2">常用 C / C++。更在意一道题为什么这样拆、哪个边界条件最容易漏，以及测试怎么设计才真能证明它对了——这些比分数有意思。</p>
-          <p id="oiText3">除了题目，也常把系统里的东西拆开看：编译、链接、加载，每一层都能用几个小实验验证。说到底和刷题是同一套方法。</p>
+          <p id="oiText1">做题时习惯先把问题拆成能单独验证的小步骤，再拼起来跑测试，这样出问题时能定位到具体哪一步，不用整段重写。</p>
+          <p id="oiText2">常用 C / C++。容易漏的是边界条件和测试数据没覆盖到的情况，所以会先写几组用例再提交。写错的题留一份最小复现：输入、期望输出、实际输出都记下来，隔几天再回来看。</p>
+          <p id="oiText3">系统那边也差不多：编译、链接、加载各跑一遍，用小实验确认每一步的输出，比只看结论靠谱。常用结构各留了一份能跑的模板和几组边界用例，用到时直接翻。读别人的实现也按这个顺序：先跑起来看输出，再顺着调用链往下拆。</p>
         </div>
       </div>
     </section>
@@ -208,7 +208,7 @@
       <header class="sec-head reveal">
         <span class="sec-index">// 04</span>
         <h2>留言</h2>
-        <p class="sec-sub">FEEDBACK — say something</p>
+        <p class="sec-sub">FEEDBACK — leave a note</p>
       </header>
       <div class="contact-grid">
         <a class="contact-card panel reveal" id="contact1Href" href="blog.html">
@@ -218,7 +218,7 @@
           <i class="contact-arrow" aria-hidden="true">→</i>
         </a>
         <div class="oi-text contact-aside reveal">
-          <p>这里不放邮箱，也不挂账号。想聊某个项目的实现、某段代码的取舍，或者踩过的同一个坑，直接在对应文章下面写就行。</p>
+          <p>想聊某个项目的实现、某段代码的取舍，或者踩过的同一个坑，直接在对应文章下面写就行。</p>
           <p>三个项目都有能在浏览器里直接试的演示页，先玩再聊更省事。</p>
         </div>
       </div>
@@ -230,7 +230,7 @@
   <footer class="footer">
     <div class="footer-inner">
       <span class="footer-logo">pen-pig:~$</span>
-      <span class="footer-note" id="footerNote">© 2026 pen-pig — 用好奇心与 AI 造东西</span>
+      <span class="footer-note" id="footerNote">© 2026 pen-pig</span>
       <a class="footer-top" href="#top">回到顶部<i aria-hidden="true">↑</i></a>
     </div>
   </footer>
