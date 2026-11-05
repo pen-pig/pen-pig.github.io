@@ -11,9 +11,9 @@
   <meta property="og:url" content="https://pen-pig.github.io/">
   <meta name="theme-color" content="#06080c">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306080c'/%3E%3Cpath d='M18 20l16 12-16 12' stroke='%2346f3a7' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="assets/css/style.css?v=4">
+  <link rel="stylesheet" href="assets/css/style.css?v=5">
 </head>
-<body>
+<body class="home">
 
   <!-- 氛围层：扫描线 / 噪点 / 光标辉光 -->
   <div class="fx fx-scan" aria-hidden="true"></div>
@@ -73,7 +73,6 @@
               <p class="ok"><span class="t">[    3.000000]</span> login: pen-pig — welcome home ✓</p>
             </div>
           </div>
-          <p class="fig-cap">FIG.01 — 终端美学，boot log 风格</p>
         </div>
 
       </div>
@@ -95,6 +94,15 @@
         <p class="sec-sub">ABOUT — the human behind the project</p>
       </header>
       <div class="about-grid">
+        <aside class="about-index reveal" aria-label="站内索引">
+          <p class="about-index-title">[ INDEX ] / 这里有什么</p>
+          <ol>
+            <li><a href="#projects"><span>02</span><b>项目</b><i>三个能在浏览器里试的作品</i></a></li>
+            <li><a href="#oi"><span>03</span><b>竞赛</b><i>拆解、验证与复现的方法</i></a></li>
+            <li><a href="#contact"><span>04</span><b>留言</b><i>文章下面直接写，不用注册</i></a></li>
+          </ol>
+          <p class="about-index-note">静态页面 · 留言无需注册</p>
+        </aside>
         <div class="about-text reveal">
           <p class="lead" id="aboutLead">你好，我是 <strong>pen-pig</strong>，这里放的是我做过的东西和踩过的坑。</p>
           <p id="aboutP1">平时在 AI 的协助下做过一些小东西：一个叫 CeruliaOS 的操作系统实验项目、一个用 PHP 写的网站、几个小工具。代码由 AI 生成，我负责提需求、做设计、调试和验证——也顺便弄懂了它们背后的原理。</p>
