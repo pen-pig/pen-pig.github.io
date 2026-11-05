@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>在浏览器里试用 website · pen-pig</title>
-  <meta name="description" content="社团网站（PHP + JSON 存储）的网页模块导览：OJ、用户系统、头像、签到、搜索、备份、网盘。">
+  <meta name="description" content="PHP 网站（JSON 存储）的网页模块导览：OJ、用户系统、头像、签到、搜索、备份、网盘。">
   <meta property="og:title" content="试用 website — 模块导览">
-  <meta property="og:description" content="社团网站的网页交互导览。">
+  <meta property="og:description" content="PHP 网站的网页交互导览。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://pen-pig.github.io/site-demo.html">
   <meta name="theme-color" content="#06080c">
@@ -29,10 +29,10 @@
       <a href="index.html#about"><i>01</i>关于</a>
       <a href="index.html#projects"><i>02</i>项目</a>
       <a href="index.html#oi"><i>03</i>竞赛</a>
-      <a href="index.html#contact"><i>04</i>联系</a>
+      <a href="index.html#contact"><i>04</i>留言</a>
       <a href="blog.html"><i>05</i>博客</a>
     </nav>
-    <span class="nav-status"><i class="pulse-dot" aria-hidden="true"></i>ONLINE</span>
+    <span class="nav-status">STATIC SITE</span>
   </header>
 
   <main class="tour-page">
@@ -42,7 +42,7 @@
       <a class="os-back" href="index.html#projects">← 返回项目区</a>
       <p class="tape"><span>INTERACTIVE DEMO</span><span class="tape-dim">// MODULE TOUR</span></p>
       <h1 class="os-title">在浏览器里逛 <em>website</em></h1>
-      <p class="os-sub">这是社团网站（PHP + JSON 文件存储，无数据库）的<b>模块导览</b>。PHP 跑不了 GitHub Pages，所以这里把每个模块「拆」给你看：职责、技术要点和界面示意。左边选一个模块开始。</p>
+      <p class="os-sub">这是一个 PHP 网站（JSON 文件存储，无数据库）的<b>模块导览</b>。PHP 跑不了 GitHub Pages，所以这里把每个模块「拆」给你看：职责、技术要点和界面示意。左边选一个模块开始。</p>
     </section>
 
     <!-- ============ 导览主体 ============ -->
@@ -58,7 +58,7 @@
         <button class="tour-nav-item" type="button" data-mod="search"><i>05</i>搜索</button>
         <button class="tour-nav-item" type="button" data-mod="backup"><i>06</i>备份</button>
         <button class="tour-nav-item" type="button" data-mod="disk"><i>07</i>网盘</button>
-        <p class="tour-nav-note">共 7 个模块<br>已上线于社团服务器</p>
+        <p class="tour-nav-note">共 7 个模块<br>跑在 PHP 服务器上</p>
       </nav>
 
       <!-- 模块详情 -->
@@ -71,7 +71,7 @@
             <h2>OJ 题库</h2>
             <span class="tour-chip tour-chip-ok">已上线</span>
           </header>
-          <p class="tour-desc">社团自己的 OJ：题目列表、在线判题、提交记录、比赛。PHP 5.6+ 兼容，判题结果落 JSON，前端 Bootstrap。</p>
+          <p class="tour-desc">站内的 OJ：题目列表、在线判题、提交记录、比赛。PHP 5.6+ 兼容，判题结果落 JSON，前端 Bootstrap。</p>
           <div class="tour-mock">
             <p class="tour-mock-label">界面示意 · 题目列表（非真实截图）</p>
             <table class="mock-table">
@@ -102,7 +102,7 @@
           <div class="tour-mock">
             <p class="tour-mock-label">界面示意 · 登录卡（非真实截图）</p>
             <div class="mock-login">
-              <p class="mock-login-title">登录 GDGZOI</p>
+              <p class="mock-login-title">登录 OJ</p>
               <p class="mock-field">用户名 <span>pen-pig</span></p>
               <p class="mock-field">密码 <span>••••••••</span></p>
               <p class="mock-btn">登 录</p>
@@ -219,7 +219,7 @@
             <h2>网盘</h2>
             <span class="tour-chip tour-chip-ok">已上线</span>
           </header>
-          <p class="tour-desc">社团文件盘：课件、题单、比赛数据。上传下载、目录管理、分享链接（可设过期）。</p>
+          <p class="tour-desc">站内文件盘：课件、题单、比赛数据。上传下载、目录管理、分享链接（可设过期）。</p>
           <div class="tour-mock">
             <p class="tour-mock-label">界面示意 · 文件列表（非真实截图）</p>
             <table class="mock-table">
@@ -246,11 +246,11 @@
     <section class="os-info">
       <article class="os-info-card panel reveal">
         <h2>与真实版本的区别</h2>
-        <p>真实版本是跑在社团服务器上的 PHP 应用，数据存在 JSON 文件里。这里是<b>界面示意导览</b>——布局仿照真实页面重画，数据是编的，点不了。</p>
+        <p>真实版本是跑在 PHP 服务器上的应用，数据存在 JSON 文件里。这里是<b>界面示意导览</b>——布局仿照真实页面重画，数据是编的，点不了。</p>
       </article>
       <article class="os-info-card panel reveal">
         <h2>为什么网页里不能真跑</h2>
-        <p>GitHub Pages 只托管静态文件，没有 PHP 运行时，也不能连数据库。要真跑需要一台 PHP 服务器——社团的那台就是了。</p>
+        <p>GitHub Pages 只托管静态文件，没有 PHP 运行时，也不能连数据库。要真跑需要一台 PHP 服务器——随便一台就行。</p>
       </article>
       <article class="os-info-card panel reveal">
         <h2>技术栈</h2>

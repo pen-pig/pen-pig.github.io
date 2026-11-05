@@ -11,7 +11,7 @@
   "use strict";
 
   /* ---------- 配置 ---------- */
-  var DATA_URL = "assets/data/posts.json";
+  var DATA_URL = "assets/data/posts.json?v=2";
   var LS_KEY = "pen-pig-blog-local-v1";
   var UNLOCK_KEY = "pen-pig-blog-unlocked";
   var TOKEN_KEY = "pen-pig-blog-token";

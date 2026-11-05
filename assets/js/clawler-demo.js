@@ -1,8 +1,8 @@
 /* ============================================================
    pen-pig.github.io — clawler-demo.js
-   gdgzoi-clawler 网页交互演示：终端命令 / 输出 / 历史 / Tab 补全
+   oj-clawler 网页交互演示：终端命令 / 输出 / 历史 / Tab 补全
    说明：这是「交互演示」——命令与输出格式和真实爬虫一致，
-   数据为预置样例（浏览器同源策略够不到学校 OJ）。
+   数据为预置样例（浏览器同源策略够不到校内 OJ）。
    ============================================================ */
 (function () {
   "use strict";
@@ -171,7 +171,7 @@
 
   function cmdStats() {
     var total = 1284;
-    say("GDGZOI 数据统计（截至 2026-10-23）：", "ok");
+    say("校内 OJ 数据统计（截至 2026-10-23）：", "ok");
     say("  比赛数：   " + CONTESTS.length, "");
     say("  参赛人数： 42", "");
     say("  提交总数： " + total.toLocaleString(), "");
@@ -192,11 +192,11 @@
       RANK.forEach(function (r) { rows.push(r.rank + "," + r.user + "," + r.solved + "," + r.penalty); });
       content = rows.join("\n") + "\n";
       mime = "text/csv";
-      name = "gdgzoi-rank-2026-autumn.csv";
+      name = "oj-rank-2026-autumn.csv";
     } else {
       content = JSON.stringify({ contest: CONTESTS[0], ranking: RANK }, null, 2) + "\n";
       mime = "application/json";
-      name = "gdgzoi-rank-2026-autumn.json";
+      name = "oj-rank-2026-autumn.json";
     }
     var blob = new Blob([content], { type: mime });
     var a = document.createElement("a");
@@ -210,7 +210,7 @@
   }
 
   function cmdAbout() {
-    say("gdgzoi-clawler — 学校 OJ（GDGZOI）数据爬虫", "ok");
+    say("oj-clawler — 校内 OJ 数据爬虫", "ok");
     say("  C++ 编写；代码由 AI 生成，我负责需求、设计与验证。", "");
     say("  抓取比赛榜单与提交记录，整理成可排序的总表，支持 CSV / JSON 导出。", "");
     say("  原版跑在本机或服务器；你在浏览器里的是交互演示。", "dim");
@@ -227,7 +227,7 @@
     if (history.length > 50) history.shift();
     hIdx = history.length;
 
-    printHTML('<span class="tp">pen-pig@gdgzoi:~$</span> ' + escapeHTML(line));
+    printHTML('<span class="tp">pen-pig@local:~$</span> ' + escapeHTML(line));
 
     var parts = line.split(/\s+/);
     var cmd = parts[0].toLowerCase();
@@ -290,9 +290,9 @@
 
   /* ---------- 欢迎序列（打字机） ---------- */
   function welcome() {
-    enqueue({ kind: "type", text: "gdgzoi-clawler v1.2.0 — interactive demo", cls: "ok", speed: 18, delay: 120 });
+    enqueue({ kind: "type", text: "oj-clawler v1.2.0 — interactive demo", cls: "ok", speed: 18, delay: 120 });
     say("DEMO DATA — 命令和输出与真实爬虫一致，数据是预置样例", "dim");
-    say("真实版本跑在本机/服务器，抓学校 OJ（GDGZOI）的榜单与提交。", "dim");
+    say("真实版本跑在本机/服务器，抓取校内 OJ 的榜单与提交。", "dim");
     say("输入 help 查看命令；↑↓ 翻历史；Tab 补全。", "");
     say("", "");
   }

@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pen-pig 的个人主页</title>
-  <meta name="description" content="pen-pig：初一学生、洛谷 OI 选手（UID 1860966）。项目代码由 AI 生成，我负责需求、设计与验证。这里收录我的项目与折腾记录。">
+  <meta name="description" content="pen-pig 的个人主页：操作系统实验、小工具与踩坑记录。项目代码由 AI 生成，我负责需求、设计与验证。">
   <meta property="og:title" content="pen-pig 的个人主页">
-  <meta property="og:description" content="初一学生 · 洛谷 OI 选手（UID 1860966）。代码由 AI 生成，我负责设计与验证。">
+  <meta property="og:description" content="系统与小工具，代码由 AI 生成，我负责设计与验证。这里收着项目、思路和踩坑记录。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://pen-pig.github.io/">
   <meta name="theme-color" content="#06080c">
@@ -29,10 +29,10 @@
       <a href="#about" data-nav="about"><i>01</i>关于</a>
       <a href="#projects" data-nav="projects"><i>02</i>项目</a>
       <a href="#oi" data-nav="oi"><i>03</i>竞赛</a>
-      <a href="#contact" data-nav="contact"><i>04</i>联系</a>
+      <a href="#contact" data-nav="contact"><i>04</i>留言</a>
       <a href="blog.html"><i>05</i>博客</a>
     </nav>
-    <span class="nav-status"><i class="pulse-dot" aria-hidden="true"></i>ONLINE</span>
+    <span class="nav-status">STATIC SITE</span>
   </header>
 
   <main>
@@ -43,18 +43,18 @@
       <div class="hero-inner">
 
         <div class="hero-id">
-          <p class="tape"><span>PERSONAL HOMEPAGE</span><span class="tape-dim">// EST.2026</span></p>
+          <p class="tape"><span>PERSONAL HOMEPAGE</span><span class="tape-dim">// WORKLOG</span></p>
           <h1 class="hero-name"><span id="heroName">pen-pig</span><span class="caret" aria-hidden="true"></span></h1>
-          <p class="hero-role" id="heroRole">初一学生 · OI 选手 · 爱折腾代码</p>
-          <p class="hero-bio" id="heroBio">课余写代码、刷题，也在 AI 的协助下维护几个小项目。这里是我的数字自留地——项目、代码与踩坑记录，都放在这儿。</p>
+          <p class="hero-role" id="heroRole">写工具 · 拆系统 · 记踩坑</p>
+          <p class="hero-bio" id="heroBio">平时写点小工具、拆系统，在 AI 的协助下维护几个项目：代码由它生成，需求、设计和验证由我做。这里收着项目、思路和踩坑记录，算是一块数字自留地。</p>
           <div class="hero-cta">
             <a class="btn btn-primary" href="#projects">查看项目<i aria-hidden="true">→</i></a>
-            <a class="btn btn-ghost" href="https://www.luogu.com.cn/user/1860966" data-luogu-user target="_blank" rel="noopener noreferrer" id="heroCtaLuogu">洛谷 · UID 1860966</a>
+            <a class="btn btn-ghost" href="blog.html" id="heroCtaNotes">读点笔记</a>
           </div>
           <ul class="hero-meta">
-            <li><span>STATUS</span><b class="ok" id="heroMetaStatus">ONLINE</b></li>
-            <li><span>LOCATION</span><b id="heroMetaLocation">中国 · GMT+8</b></li>
-            <li><span>CURRENTLY</span><b id="heroMetaCurrently">刷题 + 折腾小项目</b></li>
+            <li><span>FOCUS</span><b class="ok" id="heroMetaFocus">系统 · 工具 · 折腾</b></li>
+            <li><span>WORKFLOW</span><b id="heroMetaWorkflow">需求 / 设计 / 验证</b></li>
+            <li><span>STACK</span><b id="heroMetaStack">C · C++ · Web</b></li>
           </ul>
         </div>
 
@@ -69,7 +69,7 @@
               <p><span class="t">[    0.000000]</span> booting pen-pig.homepage ...</p>
               <p><span class="t">[    0.004182]</span> loading: curiosity, code, coffee</p>
               <p><span class="t">[    0.118937]</span> mounting /projects /notes /memories</p>
-              <p><span class="t">[    1.033204]</span> net: luogu uid 1860966 online</p>
+              <p><span class="t">[    1.033204]</span> net: static assets ready</p>
               <p class="ok"><span class="t">[    3.000000]</span> login: pen-pig — welcome home ✓</p>
             </div>
           </div>
@@ -83,7 +83,7 @@
     <!-- ============ TICKER ============ -->
     <div class="ticker" aria-hidden="true">
       <div class="ticker-track" id="tickerTrack">
-        <span>HELLO WORLD</span><b>//</b><span>LUOGU UID 1860966</span><b>//</b><span>CODE BY AI — VERIFIED BY ME</span><b>//</b><span>LEARNING BY BUILDING</span><b>//</b><span>EST. 2026</span><b>//</b><span>MADE WITH CURIOSITY</span><b>//</b>
+        <span>HELLO WORLD</span><b>//</b><span>SYSTEMS &amp; TOOLS</span><b>//</b><span>CODE BY AI — VERIFIED BY ME</span><b>//</b><span>LEARNING BY BUILDING</span><b>//</b><span>NOTES &amp; PITFALLS</span><b>//</b><span>MADE WITH CURIOSITY</span><b>//</b>
       </div>
     </div>
 
@@ -96,8 +96,8 @@
       </header>
       <div class="about-grid">
         <div class="about-text reveal">
-          <p class="lead" id="aboutLead">你好，我是 <strong>pen-pig</strong>，一名初一学生。</p>
-          <p id="aboutP1">课余时间我在 AI 的协助下做过一些小东西：一个叫 CeruliaOS 的操作系统实验项目、社团的网站、几个小工具。代码由 AI 生成，我负责提需求、做设计、调试和验证——也顺便弄懂了它们背后的原理。</p>
+          <p class="lead" id="aboutLead">你好，我是 <strong>pen-pig</strong>，这里放的是我做过的东西和踩过的坑。</p>
+          <p id="aboutP1">平时在 AI 的协助下做过一些小东西：一个叫 CeruliaOS 的操作系统实验项目、一个用 PHP 写的网站、几个小工具。代码由 AI 生成，我负责提需求、做设计、调试和验证——也顺便弄懂了它们背后的原理。</p>
           <p id="aboutP2">我相信理解一个系统最好的方式，是深入它的每一层。这里收录我的项目、代码和踩坑记录，当作自己的数字自留地。</p>
         </div>
       </div>
@@ -122,7 +122,6 @@
           </div>
           <div class="proj-foot">
             <span class="proj-links">
-              <a class="proj-link" id="proj1Link" href="https://github.com/pen-pig/CeruliaOS" target="_blank" rel="noopener noreferrer">github.com/pen-pig/CeruliaOS<i aria-hidden="true">→</i></a>
               <a class="proj-link proj-link-run" href="os.html">▶ 浏览器运行</a>
             </span>
             <span class="proj-lang"><i class="lang-dot lang-c" aria-hidden="true"></i>C</span>
@@ -131,7 +130,7 @@
 
         <article class="proj panel reveal">
           <h3 class="proj-name" id="proj2Name">website</h3>
-          <p class="proj-tagline" id="proj2Tagline">社团网站</p>
+          <p class="proj-tagline" id="proj2Tagline">PHP 网站</p>
           <p class="proj-desc" id="proj2Desc">PHP 5.6+ 兼容 + JSON 文件存储（无数据库）+ Bootstrap UI。已上线 OJ、注册、头像、签到、网盘等模块，管理后台另有成员搜索与数据备份。代码由 AI 生成，我负责需求与维护。</p>
           <div class="proj-tags">
             <span>PHP</span><span>JSON</span><span>Bootstrap</span>
@@ -139,7 +138,6 @@
           </div>
           <div class="proj-foot">
             <span class="proj-links">
-              <a class="proj-link" id="proj2Link" href="https://github.com/pen-pig/website" target="_blank" rel="noopener noreferrer">github.com/pen-pig/website<i aria-hidden="true">→</i></a>
               <a class="proj-link proj-link-run" href="site-demo.html">▶ 网页试用</a>
             </span>
             <span class="proj-lang"><i class="lang-dot lang-php" aria-hidden="true"></i>PHP</span>
@@ -147,16 +145,15 @@
         </article>
 
         <article class="proj panel reveal">
-          <h3 class="proj-name" id="proj3Name">gdgzoi-clawler</h3>
-          <p class="proj-tagline" id="proj3Tagline">学校 OJ 数据爬虫</p>
-          <p class="proj-desc" id="proj3Desc">GDGZOI 是学校的 OJ。这个爬虫抓取并整理它的比赛榜单与提交数据，C++ 编写，让查询快一点。</p>
+          <h3 class="proj-name" id="proj3Name">oj-clawler</h3>
+          <p class="proj-tagline" id="proj3Tagline">校内 OJ 数据爬虫</p>
+          <p class="proj-desc" id="proj3Desc">校内 OJ 的榜单和提交记录一页只露一小截，这个爬虫把它们抓下来整理成可排序的总表。C++ 编写，代码由 AI 生成，我负责需求与验证。</p>
           <div class="proj-tags">
             <span>C++</span>
             <span class="chip chip-ai">AI 生成</span>
           </div>
           <div class="proj-foot">
             <span class="proj-links">
-              <a class="proj-link" id="proj3Link" href="https://github.com/pen-pig/gdgzoi-clawler" target="_blank" rel="noopener noreferrer">github.com/pen-pig/gdgzoi-clawler<i aria-hidden="true">→</i></a>
               <a class="proj-link proj-link-run" href="clawler.html">▶ 网页试用</a>
             </span>
             <span class="proj-lang"><i class="lang-dot lang-cpp" aria-hidden="true"></i>C++</span>
@@ -164,7 +161,7 @@
         </article>
       </div>
 
-      <a class="proj-more reveal" href="https://github.com/pen-pig?tab=repositories" target="_blank" rel="noopener noreferrer">查看全部仓库<i aria-hidden="true">→</i></a>
+      <a class="proj-more reveal" href="blog.html">读点踩坑记录<i aria-hidden="true">→</i></a>
     </section>
 
     <!-- ============ 03 竞赛 ============ -->
@@ -172,51 +169,50 @@
       <header class="sec-head reveal">
         <span class="sec-index">// 03</span>
         <h2>竞赛</h2>
-        <p class="sec-sub">COMPETITIVE PROGRAMMING — luogu</p>
+        <p class="sec-sub">COMPETITIVE PROGRAMMING — notes on method</p>
       </header>
       <div class="oi-grid">
         <div class="oi-card panel reveal">
-          <div class="oi-card-bar"><span class="prompt">$</span> whois --luogu 1860966</div>
+          <div class="oi-card-bar"><span class="prompt">$</span> cat notes/approach.txt</div>
           <div class="oi-card-body">
             <div class="oi-uid">
-              <span class="oi-uid-label">UID</span>
-              <span class="oi-uid-num" id="oiUid">1860966</span>
+              <span class="oi-uid-label">LANGUAGE</span>
+              <span class="oi-uid-num" id="oiLang">C / C++</span>
             </div>
             <dl class="oi-kv">
-              <dt>user</dt><dd id="oiUser">pen-pig</dd>
-              <dt>platform</dt><dd id="oiPlatform">luogu.com.cn</dd>
-              <dt>status</dt><dd class="ok" id="oiStatus">active</dd>
+              <dt>focus</dt><dd>数据结构 / 图论</dd>
+              <dt>method</dt><dd>拆解 · 验证 · 复现</dd>
+              <dt>habit</dt><dd>先跑通，再读源码</dd>
             </dl>
-            <a class="btn btn-primary" href="https://www.luogu.com.cn/user/1860966" data-luogu-user target="_blank" rel="noopener noreferrer">访问洛谷主页<i aria-hidden="true">→</i></a>
+            <a class="btn btn-primary" href="#projects">看相关项目<i aria-hidden="true">→</i></a>
           </div>
         </div>
         <div class="oi-text reveal">
-          <p>算法是另一座需要从头理解的系统：把一个庞大问题拆成可验证的小步骤，再用测试证明它正确。</p>
-          <p>常用语言 <b>C / C++</b>。刷题记录都放在洛谷主页上，欢迎交流。</p>
+          <p id="oiText1">算法是另一座需要从头理解的系统：把一个庞大问题拆成可验证的小步骤，再用测试证明它正确。</p>
+          <p id="oiText2">常用 C / C++。更在意一道题为什么这样拆、哪个边界条件最容易漏，以及测试怎么设计才真能证明它对了——这些比分数有意思。</p>
+          <p id="oiText3">除了题目，也常把系统里的东西拆开看：编译、链接、加载，每一层都能用几个小实验验证。说到底和刷题是同一套方法。</p>
         </div>
       </div>
     </section>
 
-    <!-- ============ 04 联系 ============ -->
+    <!-- ============ 04 留言 ============ -->
     <section class="section" id="contact">
       <header class="sec-head reveal">
         <span class="sec-index">// 04</span>
-        <h2>联系</h2>
-        <p class="sec-sub">CONTACT — say hello</p>
+        <h2>留言</h2>
+        <p class="sec-sub">FEEDBACK — say something</p>
       </header>
       <div class="contact-grid">
-        <a class="contact-card panel reveal" id="contact1Href" href="https://github.com/pen-pig" target="_blank" rel="noopener noreferrer">
-          <span class="contact-kicker" id="contact1Kicker">[01] GITHUB</span>
-          <span class="contact-main" id="contact1Main">github.com/pen-pig</span>
-          <span class="contact-note" id="contact1Note">代码都在这儿，Issue 也行</span>
+        <a class="contact-card panel reveal" id="contact1Href" href="blog.html">
+          <span class="contact-kicker" id="contact1Kicker">[01] 博客</span>
+          <span class="contact-main" id="contact1Main">在文章下面留言</span>
+          <span class="contact-note" id="contact1Note">不用注册，过一次人机验证就行</span>
           <i class="contact-arrow" aria-hidden="true">→</i>
         </a>
-        <a class="contact-card panel reveal" id="contact2Href" href="https://www.luogu.com.cn/user/1860966" data-luogu-user target="_blank" rel="noopener noreferrer">
-          <span class="contact-kicker" id="contact2Kicker">[02] LUOGU</span>
-          <span class="contact-main" id="contact2Main">UID 1860966</span>
-          <span class="contact-note" id="contact2Note">刷题与竞赛记录</span>
-          <i class="contact-arrow" aria-hidden="true">→</i>
-        </a>
+        <div class="oi-text contact-aside reveal">
+          <p>这里不放邮箱，也不挂账号。想聊某个项目的实现、某段代码的取舍，或者踩过的同一个坑，直接在对应文章下面写就行。</p>
+          <p>三个项目都有能在浏览器里直接试的演示页，先玩再聊更省事。</p>
+        </div>
       </div>
     </section>
 
@@ -232,7 +228,7 @@
   </footer>
 
   <!-- 站点文案覆盖层要先于 main.js 执行：它负责把后台改过的文案贴到 DOM 上 -->
-  <script src="assets/js/site.js?v=1" defer></script>
+  <script src="assets/js/site.js?v=2" defer></script>
   <script src="assets/js/main.js?v=3" defer></script>
 </body>
 </html>

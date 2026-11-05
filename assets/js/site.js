@@ -82,14 +82,6 @@
     el.setAttribute("data-final", String(value));
   }
 
-  // 洛谷 UID 改了，所有指向洛谷主页的链接一起换
-  function syncLuoguLinks(uid) {
-    var links = document.querySelectorAll("[data-luogu-user]");
-    for (var i = 0; i < links.length; i++) {
-      links[i].setAttribute("href", "https://www.luogu.com.cn/user/" + encodeURIComponent(uid));
-    }
-  }
-
   function apply() {
     if (applied) return;
     applied = true;
@@ -105,7 +97,6 @@
       }
       applyField(key, def, value);
     }
-    if (values["oi.uid"]) syncLuoguLinks(values["oi.uid"]);
     document.dispatchEvent(new CustomEvent("site:applied"));
   }
 

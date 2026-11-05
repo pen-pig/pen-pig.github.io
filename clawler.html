@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>在浏览器里试用 gdgzoi-clawler · pen-pig</title>
-  <meta name="description" content="gdgzoi-clawler 交互演示：命令、输出、导出格式与真实爬虫一致，数据为预置样例。">
-  <meta property="og:title" content="试用 gdgzoi-clawler">
-  <meta property="og:description" content="学校 OJ 爬虫的网页交互演示。">
+  <title>在浏览器里试用 oj-clawler · pen-pig</title>
+  <meta name="description" content="oj-clawler 交互演示：命令、输出、导出格式与真实爬虫一致，数据为预置样例。">
+  <meta property="og:title" content="试用 oj-clawler">
+  <meta property="og:description" content="校内 OJ 爬虫的网页交互演示。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://pen-pig.github.io/clawler.html">
   <meta name="theme-color" content="#06080c">
@@ -29,10 +29,10 @@
       <a href="index.html#about"><i>01</i>关于</a>
       <a href="index.html#projects"><i>02</i>项目</a>
       <a href="index.html#oi"><i>03</i>竞赛</a>
-      <a href="index.html#contact"><i>04</i>联系</a>
+      <a href="index.html#contact"><i>04</i>留言</a>
       <a href="blog.html"><i>05</i>博客</a>
     </nav>
-    <span class="nav-status"><i class="pulse-dot" aria-hidden="true"></i>ONLINE</span>
+    <span class="nav-status">STATIC SITE</span>
   </header>
 
   <main class="clawler-page">
@@ -41,8 +41,8 @@
     <section class="clawler-head">
       <a class="os-back" href="index.html#projects">← 返回项目区</a>
       <p class="tape"><span>INTERACTIVE DEMO</span><span class="tape-dim">// SIMULATED TERMINAL</span></p>
-      <h1 class="os-title">在浏览器里试用 <em>gdgzoi-clawler</em></h1>
-      <p class="os-sub">学校 OJ（GDGZOI）数据爬虫的<b>交互演示</b>：命令、输出格式、导出文件和真实版本一致。浏览器因为同源策略碰不到 OJ，所以这里用的是预置样例数据——先输入 <code>help</code> 看看。</p>
+      <h1 class="os-title">在浏览器里试用 <em>oj-clawler</em></h1>
+      <p class="os-sub">校内 OJ 数据爬虫的<b>交互演示</b>：命令、输出格式、导出文件和真实版本一致。浏览器因为同源策略碰不到 OJ，所以这里用的是预置样例数据——先输入 <code>help</code> 看看。</p>
     </section>
 
     <!-- ============ 终端舞台 ============ -->
@@ -53,12 +53,12 @@
       <div class="term clawler-term">
         <div class="term-bar">
           <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="term-title">pen-pig: ~/gdgzoi-clawler</span>
+          <span class="term-title">pen-pig: ~/oj-clawler</span>
           <span class="term-size">↑↓ 历史 · Tab 补全</span>
         </div>
         <div class="term-body clawler-out" id="termOut" aria-live="polite"></div>
         <form class="clawler-input-row" id="termForm" autocomplete="off">
-          <span class="clawler-prompt">pen-pig@gdgzoi:~$</span>
+          <span class="clawler-prompt">pen-pig@local:~$</span>
           <input class="clawler-input" id="termInput" type="text" placeholder="输入 help 回车开始" aria-label="命令输入" autocomplete="off" spellcheck="false">
         </form>
       </div>
@@ -80,7 +80,7 @@
     <section class="os-info">
       <article class="os-info-card panel reveal">
         <h2>这个爬虫做什么</h2>
-        <p>抓取 GDGZOI（学校 OJ）的比赛榜单和提交记录，整理成可排序的总表，支持 CSV / JSON 导出。C++ 编写，代码由 AI 生成，我负责需求、设计与验证。</p>
+        <p>抓取校内 OJ 的比赛榜单和提交记录，整理成可排序的总表，支持 CSV / JSON 导出。C++ 编写，代码由 AI 生成，我负责需求、设计与验证。</p>
       </article>
       <article class="os-info-card panel reveal">
         <h2>演示和真版的区别</h2>
@@ -106,6 +106,6 @@
   </footer>
 
   <script src="assets/js/main.js?v=2" defer></script>
-  <script src="assets/js/clawler-demo.js?v=2" defer></script>
+  <script src="assets/js/clawler-demo.js?v=3" defer></script>
 </body>
 </html>

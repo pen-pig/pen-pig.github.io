@@ -45,7 +45,7 @@ const CAPTCHA_TTL_MS = 5 * 60 * 1000;
 const MAX_CONTENT = 1000;
 const MAX_NICK = 24;
 
-// 讨论区配图：允许的类型与上限（对应社团的讨论区：jpg/png/gif/webp）
+// 讨论区配图：允许的类型与上限（讨论区配图：jpg/png/gif/webp）
 const IMAGE_TYPES = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -95,7 +95,7 @@ function clean(s, max) {
 }
 
 /* ---------------- 讨论区扩展：配图 / 删除码 ----------------
-   博客评论区按「社团讨论区」的模型扩展：楼号、回复某楼、配图、删自己的评论。
+   博客评论区按讨论区模型扩展：楼号、回复某楼、配图、删自己的评论。
    匿名没有账号体系，所以用「删除码」代替密码：
    发评论时服务端随机生成一段明文只回给提交者一次，库里只留哈希，
    之后凭删除码就能删掉自己那条。
@@ -187,7 +187,7 @@ function updateComment(id, patch) {
 }
 
 /* ---------------- 图形验证码 ----------------
-   参照社团网站的 GD 验证码：4 位小写字符 + 干扰弧线 + 噪点，
+   参照 GD 字符验证码：4 位小写字符 + 干扰弧线 + 噪点，
    字符逐个随机抖动、随机颜色。答案只存在服务端，客户端拿到的就是一张图。
 
    图是手写 PNG 编码器直接生成的（字符用 5x7 点阵画出来），
@@ -752,21 +752,22 @@ const SITE_GROUPS = {
   about: "关于 ABOUT",
   projects: "项目 PROJECTS",
   oi: "竞赛 COMPETITION",
-  contact: "联系 CONTACT",
+  contact: "留言 FEEDBACK",
   extra: "其它 MISC"
 };
 
 // mode: text = 纯文本；lines = 多行（每行一条）；items = 多项（横向排列）
-// type:  text = 单行输入；textarea = 多行输入；url = 链接（只放行 http/https）
+// type:  text = 单行输入；textarea = 多行输入；url = 链接（http/https 或站内相对路径）
 // attr:  有值就改这个属性（href），而不是改元素文字
+// 注：字段表只收「作品与站点文案」，不收任何可定位到真人的账号 / UID / 地区 / 仓库链接。
 const SITE_FIELDS = {
   "hero.name":           { group: "hero", label: "显示名", sel: "heroName", max: 40 },
   "hero.role":           { group: "hero", label: "一句话身份", sel: "heroRole", max: 60 },
   "hero.bio":            { group: "hero", label: "简介", sel: "heroBio", max: 240, type: "textarea" },
-  "hero.meta.status":    { group: "hero", label: "状态", sel: "heroMetaStatus", max: 20 },
-  "hero.meta.location":  { group: "hero", label: "所在地", sel: "heroMetaLocation", max: 30 },
-  "hero.meta.currently": { group: "hero", label: "正在做的事", sel: "heroMetaCurrently", max: 40 },
-  "hero.cta.luogu":      { group: "hero", label: "洛谷按钮文字", sel: "heroCtaLuogu", max: 40 },
+  "hero.meta.focus":     { group: "hero", label: "关注方向", sel: "heroMetaFocus", max: 30 },
+  "hero.meta.workflow":  { group: "hero", label: "工作方式", sel: "heroMetaWorkflow", max: 30 },
+  "hero.meta.stack":     { group: "hero", label: "技术栈", sel: "heroMetaStack", max: 30 },
+  "hero.cta.notes":      { group: "hero", label: "次按钮文字", sel: "heroCtaNotes", max: 40 },
 
   "boot.log":            { group: "hero", label: "启动日志", sel: "bootLog", mode: "lines", max: 120, limit: 20 },
   "ticker.items":        { group: "hero", label: "滚动横幅", sel: "tickerTrack", mode: "items", max: 40, limit: 16 },
@@ -778,29 +779,22 @@ const SITE_FIELDS = {
   "proj1.name":          { group: "projects", label: "项目 1 · 名称", sel: "proj1Name", max: 40 },
   "proj1.tagline":       { group: "projects", label: "项目 1 · 标语", sel: "proj1Tagline", max: 60 },
   "proj1.desc":          { group: "projects", label: "项目 1 · 描述", sel: "proj1Desc", max: 320, type: "textarea" },
-  "proj1.link":          { group: "projects", label: "项目 1 · 仓库链接", sel: "proj1Link", max: 200, type: "url", attr: "href" },
   "proj2.name":          { group: "projects", label: "项目 2 · 名称", sel: "proj2Name", max: 40 },
   "proj2.tagline":       { group: "projects", label: "项目 2 · 标语", sel: "proj2Tagline", max: 60 },
   "proj2.desc":          { group: "projects", label: "项目 2 · 描述", sel: "proj2Desc", max: 320, type: "textarea" },
-  "proj2.link":          { group: "projects", label: "项目 2 · 仓库链接", sel: "proj2Link", max: 200, type: "url", attr: "href" },
   "proj3.name":          { group: "projects", label: "项目 3 · 名称", sel: "proj3Name", max: 40 },
   "proj3.tagline":       { group: "projects", label: "项目 3 · 标语", sel: "proj3Tagline", max: 60 },
   "proj3.desc":          { group: "projects", label: "项目 3 · 描述", sel: "proj3Desc", max: 320, type: "textarea" },
-  "proj3.link":          { group: "projects", label: "项目 3 · 仓库链接", sel: "proj3Link", max: 200, type: "url", attr: "href" },
 
-  "oi.uid":              { group: "oi", label: "洛谷 UID", sel: "oiUid", max: 20 },
-  "oi.user":             { group: "oi", label: "洛谷用户名", sel: "oiUser", max: 40 },
-  "oi.platform":         { group: "oi", label: "平台域名", sel: "oiPlatform", max: 40 },
-  "oi.status":           { group: "oi", label: "状态", sel: "oiStatus", max: 20 },
+  "oi.lang":             { group: "oi", label: "主语言", sel: "oiLang", max: 20 },
+  "oi.text1":            { group: "oi", label: "第一段", sel: "oiText1", max: 320, type: "textarea" },
+  "oi.text2":            { group: "oi", label: "第二段", sel: "oiText2", max: 320, type: "textarea" },
+  "oi.text3":            { group: "oi", label: "第三段", sel: "oiText3", max: 320, type: "textarea" },
 
-  "contact1.kicker":     { group: "contact", label: "联系 1 · 标签", sel: "contact1Kicker", max: 30 },
-  "contact1.main":       { group: "contact", label: "联系 1 · 主文案", sel: "contact1Main", max: 60 },
-  "contact1.note":       { group: "contact", label: "联系 1 · 备注", sel: "contact1Note", max: 60 },
-  "contact1.href":       { group: "contact", label: "联系 1 · 链接", sel: "contact1Href", max: 200, type: "url", attr: "href" },
-  "contact2.kicker":     { group: "contact", label: "联系 2 · 标签", sel: "contact2Kicker", max: 30 },
-  "contact2.main":       { group: "contact", label: "联系 2 · 主文案", sel: "contact2Main", max: 60 },
-  "contact2.note":       { group: "contact", label: "联系 2 · 备注", sel: "contact2Note", max: 60 },
-  "contact2.href":       { group: "contact", label: "联系 2 · 链接", sel: "contact2Href", max: 200, type: "url", attr: "href" },
+  "contact1.kicker":     { group: "contact", label: "留言卡 · 标签", sel: "contact1Kicker", max: 30 },
+  "contact1.main":       { group: "contact", label: "留言卡 · 主文案", sel: "contact1Main", max: 60 },
+  "contact1.note":       { group: "contact", label: "留言卡 · 备注", sel: "contact1Note", max: 60 },
+  "contact1.href":       { group: "contact", label: "留言卡 · 链接", sel: "contact1Href", max: 200, type: "url", attr: "href" },
 
   "footer.note":          { group: "extra", label: "页脚文字", sel: "footerNote", max: 80 }
 };
@@ -825,12 +819,15 @@ function pruneSite(values) {
   return out;
 }
 
-// 链接只放行 http/https，避免 javascript: 之类
+// 链接只放行 http/https 与站内相对路径 / 锚点，避免 javascript: 之类
 function safeUrl(v) {
   const s = String(v || "").trim();
-  if (!/^https?:\/\//i.test(s)) return "";
-  if (/[\s<>"']/.test(s)) return "";
-  return s;
+  if (!s || /[\s<>"']/.test(s)) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  // 站内页：blog.html、/blog.html、blog.html#post；以及纯锚点 #contact
+  if (/^\/?[a-z0-9._-]+\.html?(?:[?#][^\s]*)?$/i.test(s)) return s;
+  if (/^#[a-z0-9._-]+$/i.test(s)) return s;
+  return "";
 }
 
 // 前端提交的值过一遍白名单和长度限制

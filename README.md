@@ -12,7 +12,7 @@
 | `os.html` | 浏览器里运行 CeruliaOS 的演示页（v86 模拟器） |
 | `blog.html` | 博客：文章公开可读，发布需密码 |
 | `admin.html` | 后台管理页：登录同一把发布密码后，可改站点文案、管理文章、管理评论、改发布密码 |
-| `clawler.html` | gdgzoi-clawler 的网页试用（终端交互演示） |
+| `clawler.html` | oj-clawler 的网页试用（终端交互演示） |
 | `site-demo.html` | PHP 项目（网站本体）的网页试用（7 模块导览） |
 | `gateway/` | 网关（Node 服务，只用标准库）：人机验证 + IP 限流 + 本地存储 + 博客发布接口；`hashpass.js` 生成发布密码的哈希 |
 | `assets/css/style.css` | 视觉系统，设计令牌在文件顶部 `:root` |
@@ -92,7 +92,7 @@ cp os-image.bin <本站>/assets/os/cerulia.img
 
 ### 评论区
 
-评论区按社团网站的讨论区模型实现（forum.php / post.php）：
+评论区按讨论区模型实现（楼号 / 楼中楼 / 删除码）：
 
 | 能力 | 说明 |
 | --- | --- |
@@ -235,4 +235,4 @@ cd gateway && PORT=8791 node server.js
 
 ## 说明
 
-本站展示的项目（CeruliaOS、website、gdgzoi-clawler）代码由 AI 生成，由我负责需求、设计与验证。
+本站展示的项目（CeruliaOS、website、oj-clawler）代码由 AI 生成，由我负责需求、设计与验证。

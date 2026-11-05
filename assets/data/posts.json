@@ -16,17 +16,17 @@
     },
     {
       "id": "2026-10-10-clawler",
-      "title": "gdgzoi-clawler：给学校 OJ 写个爬虫",
+      "title": "oj-clawler：给校内 OJ 写个爬虫",
       "date": "2026-10-10",
-      "tags": ["gdgzoi-clawler", "C++", "爬虫"],
-      "body": "## 为什么做\n\n学校 OJ（GDGZOI）的榜单一页只显示一小截，想知道「某人这学期做了多少题」要翻很久。爬虫把数据抓下来整理好，查询就快了。\n\n## 它做什么\n\n- 抓取比赛榜单，生成可排序的总表\n- 汇总每个用户的提交记录\n- 导出 CSV / JSON，方便丢进表格软件\n\nC++ 编写。代码由 AI 生成，我负责需求、设计和验证。\n\n## 在网页里试用\n\n原版跑在本机或服务器上，浏览器里因为同源策略碰不到 OJ。所以在 [演示页](/clawler.html) 里做了个交互版：命令、输出、交互方式都和真的一样，数据是预置样例。\n\n试试这几条：\n\n- `help` — 看看有哪些命令\n- `rank` — 比赛榜单\n- `submissions --recent 5` — 最近提交\n- `export csv` — 真的会下载一份 CSV\n\n## 踩坑记录\n\n- OJ 有简单的频率限制，抓取要加间隔，不然会被临时封 IP\n- 榜单页的结构改过一次，选择器写死会脆，后来按 table 的列数动态解析\n- 编码是 GBK 转 UTF-8 的活儿，漏了这步中文全是乱码"
+      "tags": ["oj-clawler", "C++", "爬虫"],
+      "body": "## 为什么做\n\n校内 OJ 的榜单一页只显示一小截，想知道「某人这学期做了多少题」要翻很久。爬虫把数据抓下来整理好，查询就快了。\n\n## 它做什么\n\n- 抓取比赛榜单，生成可排序的总表\n- 汇总每个用户的提交记录\n- 导出 CSV / JSON，方便丢进表格软件\n\nC++ 编写。代码由 AI 生成，我负责需求、设计和验证。\n\n## 在网页里试用\n\n原版跑在本机或服务器上，浏览器里因为同源策略碰不到 OJ。所以在 [演示页](/clawler.html) 里做了个交互版：命令、输出、交互方式都和真的一样，数据是预置样例。\n\n试试这几条：\n\n- `help` — 看看有哪些命令\n- `rank` — 比赛榜单\n- `submissions --recent 5` — 最近提交\n- `export csv` — 真的会下载一份 CSV\n\n## 踩坑记录\n\n- OJ 有简单的频率限制，抓取要加间隔，不然会被临时封 IP\n- 榜单页的结构改过一次，选择器写死会脆，后来按 table 的列数动态解析\n- 编码是 GBK 转 UTF-8 的活儿，漏了这步中文全是乱码"
     },
     {
       "id": "2026-10-05-site-itself",
       "title": "这个网站本身",
       "date": "2026-10-05",
       "tags": ["建站", "GitHub Pages"],
-      "body": "## 零依赖\n\n没有 CDN、没有框架、没有统计脚本。字体子集化后自托管（6 个 woff2，共约 190KB），图标全是内联 SVG。\n\n代价是每次改文案都要重新子集化字体——漏一个汉字，那个字就会变方框。这个坑我已经踩过一次了。\n\n## 终端美学\n\n深色控制台风：磷光绿 + 琥珀，JetBrains Mono + Noto Sans SC。动效只改 `transform` 和 `opacity`，并且全部尊重 `prefers-reduced-motion`；关掉 JS 页面内容依然完整。\n\n## 结构\n\n- `index.html` — 单页：关于 / 项目 / 竞赛 / 联系\n- `os.html` — 浏览器里跑 CeruliaOS\n- `blog.html` — 你现在看的这个\n- `clawler.html` — 爬虫交互演示\n- `site-demo.html` — 社团网站的模块导览\n\n## 部署\n\nGitHub Pages + Actions 自动构建，`main` 分支推上去即上线。本机 HTTPS 到 github.com 不通，改走 SSH 推送。\n\n## 博客怎么工作\n\n文章存在网关的 `data/posts.json`，页面优先读网关，网关挂了才回退到仓库里的 `assets/data/posts.json`。发帖要密码，发布时还要过一次人机验证，点「发布上线」就立刻生效——不用再导出 JSON、手动提交推送。"
+      "body": "## 零依赖\n\n没有 CDN、没有框架、没有统计脚本。字体子集化后自托管（6 个 woff2，共约 190KB），图标全是内联 SVG。\n\n代价是每次改文案都要重新子集化字体——漏一个汉字，那个字就会变方框。这个坑我已经踩过一次了。\n\n## 终端美学\n\n深色控制台风：磷光绿 + 琥珀，JetBrains Mono + Noto Sans SC。动效只改 `transform` 和 `opacity`，并且全部尊重 `prefers-reduced-motion`；关掉 JS 页面内容依然完整。\n\n## 结构\n\n- `index.html` — 单页：关于 / 项目 / 竞赛 / 联系\n- `os.html` — 浏览器里跑 CeruliaOS\n- `blog.html` — 你现在看的这个\n- `clawler.html` — 爬虫交互演示\n- `site-demo.html` — PHP 网站的模块导览\n\n## 部署\n\nGitHub Pages + Actions 自动构建，`main` 分支推上去即上线。本机 HTTPS 到 github.com 不通，改走 SSH 推送。\n\n## 博客怎么工作\n\n文章存在网关的 `data/posts.json`，页面优先读网关，网关挂了才回退到仓库里的 `assets/data/posts.json`。发帖要密码，发布时还要过一次人机验证，点「发布上线」就立刻生效——不用再导出 JSON、手动提交推送。"
     }
   ]
 }

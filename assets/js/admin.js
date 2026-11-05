@@ -14,7 +14,7 @@
   "use strict";
 
   /* ---------- 配置 ---------- */
-  var DATA_URL = "assets/data/posts.json";
+  var DATA_URL = "assets/data/posts.json?v=2";
   var DRAFTS_KEY = "pen-pig-admin-drafts-v1";
   var UNLOCK_KEY = "pen-pig-admin-unlocked";
   var TOKEN_KEY = "pen-pig-admin-token";
