@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pen-pig 的个人主页</title>
-  <meta name="description" content="pen-pig 的个人主页：操作系统实验、小工具与踩坑记录。项目代码由 AI 生成。">
+  <meta name="description" content="pen-pig 的个人主页。项目代码由 AI 生成。">
   <meta property="og:title" content="pen-pig 的个人主页">
-  <meta property="og:description" content="系统与小工具，项目、演示和踩坑记录都放在这里。项目代码由 AI 生成。">
+  <meta property="og:description" content="pen-pig 的个人主页。项目代码由 AI 生成。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://pen-pig.github.io/">
   <meta name="theme-color" content="#06080c">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306080c'/%3E%3Cpath d='M18 20l16 12-16 12' stroke='%2346f3a7' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <link rel="stylesheet" href="assets/css/style.css?v=6">
 </head>
 <body class="home">
 
@@ -26,13 +26,8 @@
       <span class="nav-user">pen-pig@home</span><span class="nav-colon">:</span><span class="nav-path">~</span><span class="nav-dollar">$</span>
     </a>
     <nav class="nav-links" aria-label="页面导航">
-      <a href="#about" data-nav="about"><i>01</i>关于</a>
-      <a href="#projects" data-nav="projects"><i>02</i>项目</a>
-      <a href="#oi" data-nav="oi"><i>03</i>竞赛</a>
-      <a href="#contact" data-nav="contact"><i>04</i>留言</a>
-      <a href="blog.html"><i>05</i>博客</a>
+      <a href="blog.html">BLOG<i aria-hidden="true">→</i></a>
     </nav>
-    <span class="nav-status">STATIC SITE</span>
   </header>
 
   <main>
@@ -45,17 +40,9 @@
         <div class="hero-id">
           <p class="tape"><span>PERSONAL HOMEPAGE</span><span class="tape-dim">// WORKLOG</span></p>
           <h1 class="hero-name"><span id="heroName">pen-pig</span><span class="caret" aria-hidden="true"></span></h1>
-          <p class="hero-role" id="heroRole">系统实验 · 小工具 · 踩坑记录</p>
-          <p class="hero-bio" id="heroBio">这里放几个做过的项目，还有调试笔记。点开卡片能看说明，也能在浏览器里直接试。</p>
           <div class="hero-cta">
-            <a class="btn btn-primary" href="#projects">查看项目<i aria-hidden="true">→</i></a>
-            <a class="btn btn-ghost" href="blog.html" id="heroCtaNotes">读点笔记</a>
+            <a class="btn btn-ghost" href="blog.html" id="heroCtaNotes">BLOG<i aria-hidden="true">→</i></a>
           </div>
-          <ul class="hero-meta">
-            <li><span>FOCUS</span><b class="ok" id="heroMetaFocus">系统 · 工具 · 折腾</b></li>
-            <li><span>WORKFLOW</span><b id="heroMetaWorkflow">需求 / 设计 / 验证</b></li>
-            <li><span>STACK</span><b id="heroMetaStack">C · C++ · Web</b></li>
-          </ul>
         </div>
 
         <div class="hero-term">
@@ -67,173 +54,16 @@
             </div>
             <div class="term-body" id="bootLog">
               <p><span class="t">[    0.000000]</span> booting pen-pig.homepage ...</p>
-              <p><span class="t">[    0.004182]</span> loading: projects, notes, drafts</p>
-              <p><span class="t">[    0.118937]</span> mounting /projects /notes</p>
-              <p><span class="t">[    1.033204]</span> net: static assets ready</p>
-              <p class="ok"><span class="t">[    3.000000]</span> done: static site ready ✓</p>
+              <p><span class="t">[    0.118937]</span> loading: static assets</p>
+              <p class="ok"><span class="t">[    1.000000]</span> done: ready ✓</p>
             </div>
           </div>
         </div>
 
-      </div>
-      <a class="scroll-hint" href="#about"><span>SCROLL</span><i aria-hidden="true">↓</i></a>
-    </section>
-
-    <!-- ============ TICKER ============ -->
-    <div class="ticker" aria-hidden="true">
-      <div class="ticker-track" id="tickerTrack">
-        <span>OS EXPERIMENT</span><b>//</b><span>C · C++ · WEB</span><b>//</b><span>BROWSER DEMOS</span><b>//</b><span>NOTES &amp; PITFALLS</span><b>//</b><span>STATIC SITE</span><b>//</b>
-      </div>
-    </div>
-
-    <!-- ============ 01 关于 ============ -->
-    <section class="section" id="about">
-      <header class="sec-head reveal">
-        <span class="sec-index">// 01</span>
-        <h2>关于</h2>
-        <p class="sec-sub">ABOUT — what's on this site</p>
-      </header>
-      <div class="about-grid">
-        <aside class="about-index reveal" aria-label="站内索引">
-          <p class="about-index-title">[ INDEX ] / 这里有什么</p>
-          <ol>
-            <li><a href="#projects"><span>02</span><b>项目</b><i>三个能在浏览器里试的作品</i></a></li>
-            <li><a href="#oi"><span>03</span><b>竞赛</b><i>拆解、验证与复现的方法</i></a></li>
-            <li><a href="#contact"><span>04</span><b>留言</b><i>文章下面直接写，不用注册</i></a></li>
-          </ol>
-          <p class="about-index-note">静态页面 · 留言无需注册</p>
-        </aside>
-        <div class="about-text reveal">
-          <p class="lead" id="aboutLead">你好，我是 <strong>pen-pig</strong>，这里放的是我做过的东西和踩过的坑。</p>
-          <p id="aboutP1">做过几个小项目：CeruliaOS（操作系统实验）、一个 PHP 网站、一个校内 OJ 的爬虫。代码由 AI 生成，我负责提需求、调试和验证。</p>
-          <p id="aboutP2">笔记主要写实现思路和踩过的坑，方便以后回查。三个项目都做了能在浏览器里直接试的演示页，不用装环境。页面本身是静态的，文章和留言走一个独立的小网关，依赖少，出问题好排查。</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 02 项目 ============ -->
-    <section class="section" id="projects">
-      <header class="sec-head reveal">
-        <span class="sec-index">// 02</span>
-        <h2>项目</h2>
-        <p class="sec-sub">PROJECTS — three demos you can try</p>
-      </header>
-
-      <div class="proj-row">
-        <article class="proj panel reveal">
-          <h3 class="proj-name" id="proj1Name">CeruliaOS</h3>
-          <p class="proj-tagline" id="proj1Tagline">操作系统实验项目</p>
-          <p class="proj-desc" id="proj1Desc">从 bootloader 到图形桌面的操作系统实验，引导链和内核各跑过一遍，网页里可以直接启动。</p>
-          <div class="proj-tags">
-            <span>C</span><span>x86 Assembly</span><span>QEMU</span>
-            <span class="chip chip-ai">AI 生成</span>
-          </div>
-          <div class="proj-foot">
-            <span class="proj-links">
-              <a class="proj-link proj-link-run" href="os.html">▶ 浏览器运行</a>
-            </span>
-            <span class="proj-lang"><i class="lang-dot lang-c" aria-hidden="true"></i>C</span>
-          </div>
-        </article>
-
-        <article class="proj panel reveal">
-          <h3 class="proj-name" id="proj2Name">website</h3>
-          <p class="proj-tagline" id="proj2Tagline">PHP 网站</p>
-          <p class="proj-desc" id="proj2Desc">PHP 5.6+ 兼容 + JSON 文件存储（无数据库）+ Bootstrap UI。已上线 OJ、注册、头像、签到、网盘等模块，管理后台另有成员搜索与数据备份。</p>
-          <div class="proj-tags">
-            <span>PHP</span><span>JSON</span><span>Bootstrap</span>
-            <span class="chip chip-ai">AI 生成</span>
-          </div>
-          <div class="proj-foot">
-            <span class="proj-links">
-              <a class="proj-link proj-link-run" href="site-demo.html">▶ 网页试用</a>
-            </span>
-            <span class="proj-lang"><i class="lang-dot lang-php" aria-hidden="true"></i>PHP</span>
-          </div>
-        </article>
-
-        <article class="proj panel reveal">
-          <h3 class="proj-name" id="proj3Name">oj-clawler</h3>
-          <p class="proj-tagline" id="proj3Tagline">校内 OJ 数据爬虫</p>
-          <p class="proj-desc" id="proj3Desc">校内 OJ 的榜单和提交记录一页只露一小截，爬虫把它们抓下来整理成可排序的总表，支持 CSV、JSON 导出。</p>
-          <div class="proj-tags">
-            <span>C++</span>
-            <span class="chip chip-ai">AI 生成</span>
-          </div>
-          <div class="proj-foot">
-            <span class="proj-links">
-              <a class="proj-link proj-link-run" href="clawler.html">▶ 网页试用</a>
-            </span>
-            <span class="proj-lang"><i class="lang-dot lang-cpp" aria-hidden="true"></i>C++</span>
-          </div>
-        </article>
-      </div>
-
-      <a class="proj-more reveal" href="blog.html">读点踩坑记录<i aria-hidden="true">→</i></a>
-    </section>
-
-    <!-- ============ 03 竞赛 ============ -->
-    <section class="section" id="oi">
-      <header class="sec-head reveal">
-        <span class="sec-index">// 03</span>
-        <h2>竞赛</h2>
-        <p class="sec-sub">COMPETITIVE PROGRAMMING — notes on method</p>
-      </header>
-      <div class="oi-grid">
-        <div class="oi-card panel reveal">
-          <div class="oi-card-bar"><span class="prompt">$</span> cat notes/approach.txt</div>
-          <div class="oi-card-body">
-            <div class="oi-uid">
-              <span class="oi-uid-label">LANGUAGE</span>
-              <span class="oi-uid-num" id="oiLang">C / C++</span>
-            </div>
-            <dl class="oi-kv">
-              <dt>focus</dt><dd>数据结构 / 图论</dd>
-              <dt>method</dt><dd>拆解 · 验证 · 复现</dd>
-              <dt>habit</dt><dd>先跑通，再读源码</dd>
-            </dl>
-            <a class="btn btn-primary" href="#projects">看相关项目<i aria-hidden="true">→</i></a>
-          </div>
-        </div>
-        <div class="oi-text reveal">
-          <p id="oiText1">做题时习惯先把问题拆成能单独验证的小步骤，再拼起来跑测试，这样出问题时能定位到具体哪一步，不用整段重写。</p>
-          <p id="oiText2">常用 C / C++。比赛里踩过几次很基础的坑：调试输出忘删、没写 freopen、scanf 少了一个 &。现在提交前照着固定清单过一遍，文件读写和边界数据先单独测，留一份最小复现，隔几天回来看。</p>
-          <p id="oiText3">系统那边也差不多：编译、链接、加载各跑一遍，用小实验确认每一步的输出，比只看结论靠谱。常用结构各留了一份能跑的模板和几组边界用例，用到时直接翻。读别人的实现也按这个顺序：先跑起来看输出，再顺着调用链往下拆。</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 04 留言 ============ -->
-    <section class="section" id="contact">
-      <header class="sec-head reveal">
-        <span class="sec-index">// 04</span>
-        <h2>留言</h2>
-        <p class="sec-sub">FEEDBACK — leave a note</p>
-      </header>
-      <div class="contact-grid">
-        <a class="contact-card panel reveal" id="contact1Href" href="blog.html">
-          <span class="contact-kicker" id="contact1Kicker">[01] 博客</span>
-          <span class="contact-main" id="contact1Main">在文章下面留言</span>
-          <span class="contact-note" id="contact1Note">不用注册，过一次人机验证就行</span>
-          <i class="contact-arrow" aria-hidden="true">→</i>
-        </a>
-        <div class="oi-text contact-aside reveal">
-          <p>想聊某个项目的实现、某段代码的取舍，或者踩过的同一个坑，直接在对应文章下面写就行。</p>
-          <p>三个项目都有能在浏览器里直接试的演示页，先玩再聊更省事。</p>
-        </div>
       </div>
     </section>
 
   </main>
-
-  <!-- ============ 页脚 ============ -->
-  <footer class="footer">
-    <div class="footer-inner">
-      <span class="footer-logo">pen-pig:~$</span>
-      <span class="footer-note" id="footerNote">© 2026 pen-pig</span>
-      <a class="footer-top" href="#top">回到顶部<i aria-hidden="true">↑</i></a>
-    </div>
-  </footer>
 
   <!-- 站点文案覆盖层要先于 main.js 执行：它负责把后台改过的文案贴到 DOM 上 -->
   <script src="assets/js/site.js?v=2" defer></script>

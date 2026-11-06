@@ -11,7 +11,7 @@
   <meta property="og:url" content="https://pen-pig.github.io/os.html">
   <meta name="theme-color" content="#06080c">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306080c'/%3E%3Cpath d='M18 20l16 12-16 12' stroke='%2346f3a7' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <link rel="stylesheet" href="assets/css/style.css?v=6">
 </head>
 <body>
 
@@ -26,10 +26,7 @@
       <span class="nav-user">pen-pig@home</span><span class="nav-colon">:</span><span class="nav-path">~</span><span class="nav-dollar">$</span>
     </a>
     <nav class="nav-links" aria-label="页面导航">
-      <a href="index.html#about"><i>01</i>关于</a>
-      <a href="index.html#projects"><i>02</i>项目</a>
-      <a href="index.html#oi"><i>03</i>竞赛</a>
-      <a href="index.html#contact"><i>04</i>留言</a>
+      <a href="index.html">首页</a>
       <a href="blog.html"><i>05</i>博客</a>
     </nav>
     <span class="nav-status"><i class="pulse-dot" id="navDot" aria-hidden="true"></i><span id="navStatus">IDLE</span></span>
@@ -39,7 +36,7 @@
 
     <!-- ============ 标题区 ============ -->
     <section class="os-head">
-      <a class="os-back" href="index.html#projects">← 返回项目区</a>
+      <a class="os-back" href="index.html">← 返回主页</a>
       <p class="tape"><span>LIVE DEMO</span><span class="tape-dim">// NO VIDEO — REAL EMULATION</span></p>
       <h1 class="os-title">在浏览器里运行 <em>CeruliaOS</em></h1>
       <p class="os-sub">下面是一台真实的 x86 模拟器（v86，WebAssembly）。点击启动，它会加载 CeruliaOS 的磁盘镜像，走完和真机一样的引导链：<b>BIOS → MBR → boot sector → stage2 → kernel</b>。你在屏幕上看到的一切，都是这台"虚拟机"现场算出来的。</p>

@@ -2658,3 +2658,6 @@ body.home .btn:active { transform: translateY(0) scale(0.985); }
   body.home .contact-card:hover,
   .about-index li a:hover { transform: none; }
 }
+
+/* 首页极简版：bootlog 精简到 3 行后，终端卡贴合内容，不留空壳 */
+body.home .term-body { min-height: 0; }
