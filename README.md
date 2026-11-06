@@ -8,7 +8,7 @@
 
 | 路径 | 职责 |
 | --- | --- |
-| `index.html` | 单页全部内容（关于 / 项目 / 竞赛 / 联系） |
+| `index.html` | 首页：标识 / 网名 / boot log / 项目入口 |
 | `os.html` | 浏览器里运行 CeruliaOS 的演示页（v86 模拟器） |
 | `blog.html` | 博客：文章公开可读，发布需密码 |
 | `admin.html` | 后台管理页：登录同一把发布密码后，可改站点文案、管理文章、管理评论、改发布密码 |
@@ -189,12 +189,12 @@ python gateway/backup.py pull    # 线上 -> 本地 data/comments.json + data/up
 
 | 分区 | 能做什么 |
 | --- | --- |
-| 站点文案 | 改首页的可变文案——身份/简介、关于段落、三个项目卡的名称·标语·描述·链接、竞赛 UID、联系方式、页脚、启动日志、Ticker。改完点保存立刻生效，不用改代码重新部署 |
+| 站点文案 | 改首页的可变文案——网名、BLOG 按钮文字、项目名、启动日志等。改完点保存立刻生效，不用改代码重新部署。字段表在 `gateway/server.js` 的 `SITE_FIELDS`；首页精简后部分字段已无对应节点，改了不显示 |
 | 文章 | 文章列表 / 编辑器 / 发布 / 删除 / 本地草稿，功能和博客页一致 |
 | 评论 | 所有文章的评论总览，可删任意评论（不需要删除码）、置顶/取消置顶 |
 | 密码 | 在后台改发布密码，不用再跑 `hashpass.js` 贴两处哈希 |
 
-站点文案存在网关的 `gateway/data/site.json` 里，按 `SITE_FIELDS` 白名单字段校验（长度上限、`url` 类型只放行 `http/https`），后台不可用时首页仍显示 `index.html` 里写死的原文。`index.html` 的每个可改文案节点都带稳定 id（如 `heroName`、`proj1Desc`），`assets/js/site.js` 拉到值后覆盖对应节点。
+站点文案存在网关的 `gateway/data/site.json` 里，按 `SITE_FIELDS` 白名单字段校验（长度上限、`url` 类型只放行 `http/https`），后台不可用时首页仍显示 `index.html` 里写死的原文。`index.html` 的每个可改文案节点都带稳定 id（如 `heroName`、`proj1Name`），`assets/js/site.js` 拉到值后覆盖对应节点。
 
 进入后台的入口在 `blog.html` 的工具条（「后台管理」按钮），或直接打开 `admin.html`。
 
