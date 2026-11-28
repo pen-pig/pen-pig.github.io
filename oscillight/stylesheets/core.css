@@ -1,0 +1,12 @@
+@font-face {
+    font-family: Typewriter;
+    src: url('fonts/MonospaceTypewriter.ttf');
+}
+
+* {
+  font-family: Typewriter, 'Inconsolata', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', monospace;
+}
+
+.pre-formatted {
+    white-space: pre-wrap;
+}

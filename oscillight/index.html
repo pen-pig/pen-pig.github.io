@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>Oscillight</title>
+        <meta name="title" content="Oscillight">
+        <meta name="description" content="IGJ 2021 参赛作品 · 中文版">
+
+        <link rel="icon" href="src/icon.png">
+        <link rel="stylesheet" href="stylesheets/core.css">
+        <link rel="stylesheet" href="stylesheets/styles.css">
+        <link rel="stylesheet" href="stylesheets/colors.css">
+        <link rel="stylesheet" href="stylesheets/loading.css">
+        <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css" integrity="sha512-6S2HWzVFxruDlZxI3sXOZZ4/eJ8AcxkQH1+JjSe/ONCEqR9L4Ysq5JdT5ipqtzU7WHalNwzwBv+iE51gNHJNqQ==" crossorigin="anonymous" />
+    </head>
+    <body>
+        <div class="loading">
+            计算中……<br>
+            通常只需要几秒钟……<br>
+            <div class="fail-save" style="display: none;">
+                <h2>紧急存档恢复系统</h2>
+                显示本窗口说明加载耗时过长。<br>
+                请按 F12 打开控制台，查看是否有报错。<br>
+                如有报错，请截图发给作者。<br>
+                发送截图时请一并附上存档文件（便于排查问题）。<br>
+                你可以点击“导出”按钮导出存档。<br>
+                处理完后，点击“硬重置”按钮重置游戏。<br><br>
+                <button onclick="EMERGENCY.export()" style="width: 100px; height: 50px;">
+                    导出
+                </button>
+                <button onclick="EMERGENCY.reset()" style="width: 100px; height: 50px;">
+                    硬重置
+                </button>
+            </div>
+        </div>
+        <div class="mask">
+        </div>
+        <div id="app">
+            <background-animation :game="game"></background-animation>
+
+            <header>
+                <div>
+                    光: {{format(game.light)}} {{buffDisplay}}
+                </div>
+                <div v-if="game.interference.current !== 0">
+                    干涉:
+                    <span v-for="c in challenges" :class="c.color" class="c-display">{{hasCBit(c.id) ? 1 : 0}}</span>
+                </div>
+                <div v-if="game.unlocks.rainbowUpgrades">
+                    彩虹: {{format(game.rainbow, 2, 0)}}
+                </div>
+            </header>
+
+            <main class="main">
+                <div class="nav-bar">
+                    <button v-for="(tab, i) in tabs" @click="switchTab(i)">
+                        {{tab}}
+                    </button>
+                </div>
+
+                <div class="tab-con">
+                    <component v-for="tab in tabs"
+                               v-show="currentTab == tab"
+                               :is="toTabComponent(tab)"
+                               :game="game"
+                               :ref="tab"
+                               :key="tab"></component>
+                </div>
+                <win-modal v-if="win && !hideWin">
+                    你通关了！用时: <span class="green">{{getWinTime}}</span><br><br>
+                    特别感谢帮我测试游戏的朋友。<br><br>
+                    你可以继续游戏，或选择带加成 / 不带加成重新开始。<br><br>
+                    <template #button>
+                        <button class="green" @click="con">
+                            继续游戏
+                        </button>
+                        <button class="gold" @click="showBuffModal(true)">
+                            带 x2 光加成重开
+                        </button>
+                        <button class="red" @click="showBuffModal(false)">
+                            无加成重开
+                        </button>
+                        <span>
+                            作者 Buck | IGJ 2021 参赛作品
+                        </span>
+                    </template>
+                </win-modal>
+                <confirmation-modal v-if="buffModal" @yes="replay" @no="hideBuffModal">
+                    <template #header>
+                        <span :class="buffReset ? 'gold' : 'red'">{{buffReset ? "带" : "不带"}}加成重开</span>
+                    </template>
+
+                    确定要{{buffReset ? "带" : "不带"}}加成重新开始吗？
+                </confirmation-modal>
+            </main>
+         </div>
+
+         <script src="javascripts/libraries/vue.min.js"></script>
+         <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+                             integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+                             crossorigin="anonymous"></script>
+         <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
+         <script src="javascripts/libraries/break_infinity.min.js"></script>
+
+         <script src="javascripts/components/Background.js"></script>
+         <script src="javascripts/components/BaseMenuButton.js"></script>
+         <script src="javascripts/components/TooltipButton.js"></script>
+
+         <script src="javascripts/components/BaseModal.js"></script>
+         <script src="javascripts/components/AlertModal.js"></script>
+         <script src="javascripts/components/ConfirmationModal.js"></script>
+         <script src="javascripts/components/PromptModal.js"></script>
+         <script src="javascripts/components/WinModal.js"></script>
+
+         <script src="javascripts/components/OscillationTab.js"></script>
+         <script src="javascripts/components/BaseProgressBar.js"></script>
+         <script src="javascripts/components/OscillationTabUpgrade.js"></script>
+
+         <script src="javascripts/components/AmplificationTab.js"></script>
+         <script src="javascripts/components/AmplificationTabLens.js"></script>
+
+         <script src="javascripts/components/DispersionTab.js"></script>
+         <script src="javascripts/components/PrismSubtab.js"></script>
+         <script src="javascripts/components/UpgradesSubtab.js"></script>
+         <script src="javascripts/components/DispersionTabUpgrade.js"></script>
+
+         <script src="javascripts/components/InterferenceTab.js"></script>
+         <script src="javascripts/components/ConstructiveSubtab.js"></script>
+         <script src="javascripts/components/InterferenceTabUpgrade.js"></script>
+         <script src="javascripts/components/DestructiveSubtab.js"></script>
+         <script src="javascripts/components/CompletionsSubtab.js"></script>
+
+         <script src="javascripts/components/AchievementsTab.js"></script>
+         <script src="javascripts/components/Achievement.js"></script>
+
+         <script src="javascripts/components/SettingsTab.js"></script>
+
+         <script src="javascripts/database/wave.js"></script>
+         <script src="javascripts/database/laser.js"></script>
+         <script src="javascripts/database/prism.js"></script>
+         <script src="javascripts/database/challenge.js"></script>
+         <script src="javascripts/database/achievements.js"></script>
+
+         <script src="javascripts/gameloop.js"></script>
+         <script src="javascripts/emergency.js"></script>
+         <script src="javascripts/game.js"></script>
+         <script src="javascripts/update.js"></script>
+         <script src="javascripts/util.js"></script>
+         <script src="javascripts/devmode.js"></script>
+         <script src="javascripts/index.js"></script>
+    </body>
+</html>
