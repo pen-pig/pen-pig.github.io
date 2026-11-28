@@ -12,244 +12,263 @@
     <link rel="icon" href="./oscillight/src/icon.png">
     <style>
         :root {
-            --bg: #f7f3ec;
+            --paper: #f7f3ec;
             --surface: #fffdf8;
             --ink: #191512;
             --body: #3d372f;
-            --muted: #5f574c;
+            --muted: #655c50;
             --faint: #8a8177;
-            --hair: rgba(25, 21, 18, .14);
+            --line: rgba(25, 21, 18, .16);
             --accent: #c2410c;
             --accent-deep: #9a3412;
-            --radius: 10px;
+            --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, Menlo, monospace;
         }
         * { box-sizing: border-box; }
-        [hidden] { display: none !important; }
         html { scroll-behavior: smooth; }
         body {
             margin: 0;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background: var(--bg);
+            background: var(--paper);
             color: var(--ink);
             font-family: system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
             font-size: 16px;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
         }
-        .wrap {
-            width: 100%;
-            max-width: 1040px;
-            margin: 0 auto;
-            padding: 0 28px;
-        }
+        .wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 40px; }
         a { color: inherit; }
-        :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
         ::selection { background: rgba(194, 65, 12, .16); }
 
-        /* ---------- 顶栏 ---------- */
-        header.top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-top: 26px;
-        }
-        .wordmark {
-            font-weight: 700;
-            font-size: .95rem;
-            letter-spacing: -.01em;
-            text-decoration: none;
-        }
-        nav.top-links { display: flex; gap: 26px; }
+        .site-header { border-bottom: 1px solid var(--line); }
+        header.top { height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+        .wordmark { font-weight: 750; font-size: 1rem; letter-spacing: -.02em; text-decoration: none; }
+        .wordmark::before { content: "●"; margin-right: 10px; color: var(--accent); font-size: .65em; vertical-align: .15em; }
+        nav.top-links { display: flex; align-items: center; gap: 28px; }
         nav.top-links a {
-            font-size: .9rem;
+            position: relative;
+            padding: 8px 0;
             color: var(--muted);
-            text-decoration: none;
-            background-image: linear-gradient(var(--accent), var(--accent));
-            background-repeat: no-repeat;
-            background-size: 0% 1.5px;
-            background-position: left calc(100% - 1px);
-            padding-bottom: 3px;
-            transition: color .18s ease, background-size .22s ease;
-        }
-        nav.top-links a:hover { color: var(--ink); background-size: 100% 1.5px; }
-
-        /* ---------- 首屏：名字放到最大 ---------- */
-        main { flex: 1; display: flex; }
-        .hero {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 72px 0 64px;
-        }
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0 0 22px;
-            font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, Menlo, monospace;
-            font-size: .8rem;
-            letter-spacing: .22em;
-            color: var(--muted);
-        }
-        .eyebrow::before {
-            content: "";
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: var(--accent);
-        }
-        h1.name {
-            margin: 0;
-            font-size: clamp(4.2rem, 13vw, 8.5rem);
-            font-weight: 700;
-            letter-spacing: -.035em;
-            line-height: .98;
-            color: var(--ink);
-        }
-        h1.name .dot { color: var(--accent); }
-        .lead {
-            margin: 26px 0 0;
-            max-width: 30em;
-            font-size: 1.08rem;
-            line-height: 1.75;
-            color: var(--body);
-        }
-        .lead a {
-            color: var(--ink);
-            font-weight: 600;
-            text-decoration: none;
-            background-image: linear-gradient(var(--accent), var(--accent));
-            background-repeat: no-repeat;
-            background-size: 100% 1.5px;
-            background-position: left calc(100% - 1px);
-            padding-bottom: 2px;
-            transition: color .18s ease;
-        }
-        .lead a:hover { color: var(--accent-deep); }
-        /* ---------- 按钮对 ---------- */
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 14px;
-            margin-top: 38px;
-        }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 9px;
-            min-height: 46px;
-            padding: 11px 24px;
-            border-radius: 999px;
-            font-size: .95rem;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: transform .16s ease, background .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease;
-        }
-        .btn-solid {
-            background: var(--accent);
-            color: #fff7ef;
-            border: 1px solid var(--accent);
-        }
-        .btn-solid:hover {
-            background: var(--accent-deep);
-            border-color: var(--accent-deep);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(194, 65, 12, .22);
-        }
-        .btn-ghost {
-            background: transparent;
-            color: var(--ink);
-            border: 1px solid var(--hair);
-        }
-        .btn-ghost:hover { border-color: var(--ink); transform: translateY(-1px); }
-        .btn:active { transform: translateY(0); }
-        .btn .arr { transition: transform .16s ease; }
-        .btn:hover .arr { transform: translateX(3px); }
-        .note {
-            margin: 18px 0 0;
-            font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, Menlo, monospace;
-            font-size: .78rem;
-            color: var(--faint);
-        }
-        /* ---------- 页脚 ---------- */
-        footer.foot {
-            border-top: 1px solid var(--hair);
-        }
-        footer.foot .row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 18px 0 22px;
-            font-size: .82rem;
-            color: var(--muted);
-        }
-        footer.foot a {
-            color: var(--muted);
+            font-size: .88rem;
             text-decoration: none;
             transition: color .16s ease;
         }
-        footer.foot a:hover { color: var(--accent-deep); }
-        footer.foot .meta { font-family: ui-monospace, "SF Mono", Consolas, Menlo, monospace; font-size: .76rem; }
+        nav.top-links a::after {
+            content: "";
+            position: absolute;
+            left: 0; right: 0; bottom: 3px;
+            height: 1px;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform .16s ease;
+        }
+        nav.top-links a:hover { color: var(--ink); }
+        nav.top-links a:hover::after { transform: scaleX(1); }
 
-        /* ---------- 入场：只进一次 ---------- */
-        .hero > * { animation: enter .5s ease both; }
-        .hero > *:nth-child(2) { animation-delay: .06s; }
-        .hero > *:nth-child(3) { animation-delay: .12s; }
-        .hero > *:nth-child(4) { animation-delay: .18s; }
-        @keyframes enter {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
+        main { flex: 1; }
+        .hero {
+            position: relative;
+            min-height: calc(100svh - 83px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 72px 40px 112px;
+        }
+        .hero-index {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 40px;
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: .72rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+        h1.name {
+            margin: 0;
+            font-size: clamp(3.6rem, 14.5vw, 11.5rem);
+            font-weight: 750;
+            letter-spacing: -.065em;
+            line-height: .88;
+            white-space: nowrap;
+        }
+        h1.name .dot { color: var(--accent); }
+        .lead { margin: 40px 0 0; max-width: 31em; color: var(--body); font-size: 1.05rem; line-height: 1.85; }
+        .lead a { color: var(--ink); font-weight: 650; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+        .lead a:hover { color: var(--accent-deep); }
+        .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; margin-top: 36px; }
+        .btn {
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 12px 20px;
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            background: var(--accent);
+            color: #fffaf3;
+            font-size: .92rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: background .16s ease, border-color .16s ease, transform .16s ease;
+        }
+        .btn:hover { background: var(--accent-deep); border-color: var(--accent-deep); transform: translateY(-1px); }
+        .btn .arr { transition: transform .16s ease; }
+        .btn:hover .arr { transform: translateX(3px); }
+        .text-link {
+            padding: 10px 0;
+            color: var(--ink);
+            font-size: .92rem;
+            font-weight: 600;
+            text-decoration-color: var(--line);
+            text-underline-offset: 5px;
+            transition: color .16s ease, text-decoration-color .16s ease;
+        }
+        .text-link:hover { color: var(--accent-deep); text-decoration-color: var(--accent); }
+        .note { margin: 18px 0 0; color: var(--faint); font-family: var(--mono); font-size: .74rem; }
+        .spectrum {
+            position: absolute;
+            right: 40px;
+            bottom: 48px;
+            width: min(38%, 440px);
+            height: 72px;
+            border-bottom: 1px solid var(--ink);
+            background: repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), var(--line) calc(10% - 1px), var(--line) 10%) left bottom / 100% 15px no-repeat;
+            pointer-events: none;
+        }
+        .spectrum::before {
+            content: "";
+            position: absolute;
+            left: 0; right: 0; bottom: -2px;
+            height: 3px;
+            background: linear-gradient(90deg, #3157c8, #147d3f 40%, #c2410c 72%, #8a5a00);
+        }
+        .spectrum::after {
+            content: "380 / 750 NM";
+            position: absolute;
+            right: 0; bottom: 20px;
+            color: var(--faint);
+            font-family: var(--mono);
+            font-size: .66rem;
+            letter-spacing: .12em;
+        }
+
+        .directory { padding: 72px 0 88px; }
+        .section-heading { margin: 0 0 20px; color: var(--muted); font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
+        .directory-list { border-top: 1px solid var(--ink); }
+        .directory-row {
+            display: grid;
+            grid-template-columns: 56px minmax(0, 1fr) 28px;
+            gap: 20px;
+            align-items: center;
+            padding: 28px 0;
+            border-bottom: 1px solid var(--line);
+            text-decoration: none;
+        }
+        .directory-no { align-self: start; padding-top: 7px; color: var(--faint); font-family: var(--mono); font-size: .74rem; }
+        .directory-title { display: block; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 650; letter-spacing: -.025em; line-height: 1.25; }
+        .directory-desc { display: block; margin-top: 6px; color: var(--muted); font-size: .9rem; }
+        .directory-arrow { color: var(--accent); font-size: 1.35rem; transition: transform .16s ease; }
+        .directory-row:hover .directory-title { color: var(--accent-deep); }
+        .directory-row:hover .directory-arrow { transform: translateX(5px); }
+
+        footer.foot { border-top: 1px solid var(--line); }
+        footer.foot .row { min-height: 74px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: .8rem; }
+        footer.foot .meta { font-family: var(--mono); font-size: .72rem; }
+        footer.foot nav { display: flex; gap: 20px; }
+        footer.foot a { text-decoration: none; }
+        footer.foot a:hover { color: var(--accent-deep); }
+
+        .hero > * { animation: enter .32s ease both; }
+        .hero > *:nth-child(2) { animation-delay: .04s; }
+        .hero > *:nth-child(3) { animation-delay: .08s; }
+        .hero > *:nth-child(4) { animation-delay: .12s; }
+        .hero > *:nth-child(5) { animation-delay: .16s; }
+        @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 720px) {
+            .wrap { padding: 0 22px; }
+            header.top { height: 72px; }
+            nav.top-links { gap: 18px; }
+            .hero { min-height: calc(100svh - 73px); padding: 56px 22px 48px; }
+            .hero-index { margin-bottom: 32px; font-size: .64rem; }
+            .hero-index span:last-child { display: none; }
+            h1.name { font-size: clamp(3.4rem, 17vw, 7rem); }
+            .lead { margin-top: 32px; font-size: 1rem; }
+            .hero-actions { gap: 18px; margin-top: 30px; }
+            .spectrum { position: relative; right: auto; bottom: auto; width: 100%; margin-top: 52px; }
+            .directory { padding: 56px 0 64px; }
+            .directory-row { grid-template-columns: 36px minmax(0, 1fr) 20px; gap: 12px; padding: 24px 0; }
+            .directory-no { padding-top: 4px; }
+        }
+        @media (max-width: 380px) {
+            .hero-actions { align-items: stretch; flex-direction: column; gap: 8px; }
+            .text-link { text-align: center; }
+            footer.foot .row { padding: 18px 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-            * { animation: none !important; transition: none !important; }
-        }
-        /* ---------- 窄屏 ---------- */
-        @media (max-width: 560px) {
-            .wrap { padding: 0 22px; }
-            .hero { padding: 56px 0 48px; }
-            .actions { flex-direction: column; align-items: stretch; }
-            .btn { justify-content: center; }
-            nav.top-links { gap: 18px; }
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { animation: none !important; transition: none !important; }
         }
     </style>
 </head>
 <body>
-    <div class="wrap">
-        <header class="top">
-            <a class="wordmark" href="/">pen-pig</a>
-            <nav class="top-links">
-                <a href="./blog/">博客</a>
-                <a href="https://github.com/pen-pig" target="_blank" rel="noopener">GitHub</a>
-            </nav>
-        </header>
+    <div class="site-header">
+        <div class="wrap">
+            <header class="top">
+                <a class="wordmark" href="/">pen-pig</a>
+                <nav class="top-links" aria-label="主导航">
+                    <a href="./blog/">博客</a>
+                    <a href="https://github.com/pen-pig" target="_blank" rel="noopener">GitHub</a>
+                </nav>
+            </header>
+        </div>
     </div>
     <main>
         <div class="wrap hero">
-            <p class="eyebrow">个人站</p>
+            <div class="hero-index"><span>个人站 / Personal archive</span><span>Vol. 2026</span></div>
             <h1 class="name">pen-pig<span class="dot">.</span></h1>
             <p class="lead">这里放着放置游戏 <a href="./oscillight/">Oscillight</a>，和一个偶尔更新的<a href="./blog/">博客</a>。把时间投进去，看数字慢慢变大。</p>
-            <div class="actions">
-                <a class="btn btn-solid" href="./oscillight/">打开 Oscillight <span class="arr">→</span></a>
-                <a class="btn btn-ghost" href="./blog/">去博客看看</a>
+            <div class="hero-actions">
+                <a class="btn" href="./oscillight/">打开 Oscillight <span class="arr" aria-hidden="true">→</span></a>
+                <a class="text-link" href="./blog/">阅读博客</a>
             </div>
             <p class="note">免登录，进度保存在浏览器本地。</p>
+            <div class="spectrum" aria-hidden="true"></div>
         </div>
-    </main>
-    <div class="wrap">
-        <footer class="foot">
-            <div class="row">
-                <span class="meta">© 2026 pen-pig</span>
-                <span>
-                    <a href="./blog/">博客</a> · <a href="https://github.com/pen-pig" target="_blank" rel="noopener">GitHub</a>
-                </span>
+        <section class="directory" aria-labelledby="directory-title">
+            <div class="wrap">
+                <h2 class="section-heading" id="directory-title">Index / 目录</h2>
+                <div class="directory-list">
+                    <a class="directory-row" href="./oscillight/">
+                        <span class="directory-no">01</span>
+                        <span><span class="directory-title">Oscillight</span><span class="directory-desc">光学主题放置游戏</span></span>
+                        <span class="directory-arrow" aria-hidden="true">→</span>
+                    </a>
+                    <a class="directory-row" href="./blog/">
+                        <span class="directory-no">02</span>
+                        <span><span class="directory-title">博客</span><span class="directory-desc">开发笔记与折腾日常</span></span>
+                        <span class="directory-arrow" aria-hidden="true">→</span>
+                    </a>
+                    <a class="directory-row" href="https://github.com/pen-pig" target="_blank" rel="noopener">
+                        <span class="directory-no">03</span>
+                        <span><span class="directory-title">GitHub</span><span class="directory-desc">源代码与仓库</span></span>
+                        <span class="directory-arrow" aria-hidden="true">↗</span>
+                    </a>
+                </div>
             </div>
-        </footer>
-    </div>
+        </section>
+    </main>
+    <footer class="foot">
+        <div class="wrap row">
+            <span class="meta">© 2026 pen-pig</span>
+            <nav aria-label="页脚导航"><a href="./blog/">博客</a><a href="https://github.com/pen-pig" target="_blank" rel="noopener">GitHub</a></nav>
+        </div>
+    </footer>
 </body>
 </html>

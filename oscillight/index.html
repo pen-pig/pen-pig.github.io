@@ -2,6 +2,7 @@
 <html lang="zh-CN" dir="ltr">
     <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Oscillight</title>
         <meta name="title" content="Oscillight">
         <meta name="description" content="IGJ 2021 参赛作品 · 中文版">
@@ -40,6 +41,7 @@
             <background-animation :game="game"></background-animation>
 
             <header>
+                <a class="game-brand" href="/" aria-label="返回 pen-pig 首页">Oscillight <span>/ pen-pig</span></a>
                 <div>
                     光: {{format(game.light)}} {{buffDisplay}}
                 </div>
@@ -54,7 +56,7 @@
 
             <main class="main">
                 <div class="nav-bar">
-                    <button v-for="(tab, i) in tabs" @click="switchTab(i)">
+                    <button v-for="(tab, i) in tabs" @click="switchTab(i)" :class="{'is-active': currentTab === tab}" :aria-current="currentTab === tab ? 'page' : null">
                         {{tab}}
                     </button>
                 </div>
